@@ -3,26 +3,72 @@
 <head>
   <meta charset="UTF-8">
   <title>Myanmar Checkers</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { display:flex; justify-content:center; align-items:center; height:100vh; background:#222; }
-    #board { display:grid; grid-template-columns:repeat(8,60px); grid-template-rows:repeat(8,60px); }
-    .cell { width:60px; height:60px; display:flex; justify-content:center; align-items:center; }
-    .dark { background:#444; }
-    .light { background:#ddd; }
-    .piece { width:50px; height:50px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:22px; font-weight:bold; color:#fff; cursor:pointer; }
+    body { 
+      display:flex; 
+      justify-content:center; 
+      align-items:center; 
+      height:100vh; 
+      background:linear-gradient(135deg, #1e272e, #2f3640); 
+      font-family:sans-serif;
+    }
+    #board { 
+      display:grid; 
+      grid-template-columns:repeat(8, minmax(40px, 12vw)); 
+      grid-template-rows:repeat(8, minmax(40px, 12vw)); 
+      box-shadow:0 4px 20px rgba(0,0,0,0.5);
+      border-radius:12px;
+      overflow:hidden;
+    }
+    .cell { 
+      display:flex; 
+      justify-content:center; 
+      align-items:center; 
+      touch-action: manipulation;
+    }
+    .dark { background:#3e3e3e; }
+    .light { background:#d2b48c; }
+    .piece { 
+      width:80%; 
+      height:80%; 
+      border-radius:50%; 
+      display:flex; 
+      justify-content:center; 
+      align-items:center; 
+      font-size:4vw; 
+      font-weight:bold; 
+      color:#fff; 
+      cursor:pointer; 
+      box-shadow:0 3px 6px rgba(0,0,0,0.4);
+      transition: transform 0.15s;
+    }
+    .piece:active { transform:scale(0.9); }
     .blue { background:#3498db; }
     .red { background:#e74c3c; }
-    .king { border:3px solid gold; }
-    .highlight { outline:3px solid yellow; }
-    #restart { margin-top:20px; padding:10px 20px; border:none; border-radius:10px; background:#27ae60; color:#fff; font-size:18px; cursor:pointer; }
-    #restart:hover { background:#2ecc71; }
+    .king { border:3px solid gold; font-size:3vw; }
+    .king::after { content:"👑"; font-size:3vw; margin-left:2px; }
+    .highlight { outline:4px solid yellow; border-radius:12px; }
+    #restart { 
+      margin-top:20px; 
+      padding:12px 24px; 
+      border:none; 
+      border-radius:12px; 
+      background:linear-gradient(135deg, #27ae60, #2ecc71); 
+      color:#fff; 
+      font-size:20px; 
+      font-weight:bold; 
+      cursor:pointer; 
+      box-shadow:0 4px 12px rgba(0,0,0,0.4);
+    }
+    #restart:active { transform:scale(0.95); }
     .container { text-align:center; }
   </style>
 </head>
 <body>
   <div class="container">
     <div id="board"></div>
-    <button id="restart">🔄 Restart Game</button>
+    <button id="restart">🔄 Restart</button>
   </div>
 
   <script>
@@ -58,7 +104,6 @@
           if(p){
             const piece=document.createElement("div");
             piece.className="piece "+p.color+(p.king?" king":"");
-            piece.innerText=p.king?"K":"";
             cell.appendChild(piece);
           }
           boardEl.appendChild(cell);
@@ -85,7 +130,7 @@
       let moves=[];
 
       if(p.king){
-        // ✅ King moves (any diagonal distance, all directions)
+        // King moves (any diagonal distance, all directions)
         const dirs=[[1,1],[1,-1],[-1,1],[-1,-1]];
         for(const[dr,dc] of dirs){
           let nr=r+dr,nc=c+dc;
@@ -98,7 +143,7 @@
           }
         }
       }else{
-        // ✅ Pawn moves (forward only)
+        // Pawn moves (forward only)
         const forwardDirs = p.color==="blue" ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
 
         // Normal forward step
@@ -118,7 +163,7 @@
         }
       }
 
-      // ✅ Must capture if possible
+      // Must capture if possible
       if(moves.some(m=>m.isCapture)){
         const maxCap=Math.max(...moves.map(m=>m.captures.length));
         return moves.filter(m=>m.isCapture && m.captures.length===maxCap);
@@ -141,7 +186,7 @@
 
       turn = (turn==="blue")?"red":"blue";
       render();
-      if(turn==="red") setTimeout(aiMove,500);
+      if(turn==="red") setTimeout(aiMove,600);
     }
 
     function aiMove(){
@@ -154,7 +199,7 @@
           }
         }
       }
-      if(!all.length){alert("Blue Wins!");return;}
+      if(!all.length){alert("🎉 Blue Wins!");return;}
       const move=all[Math.floor(Math.random()*all.length)];
       makeMove(move.r,move.c,move);
     }
