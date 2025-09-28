@@ -4,31 +4,72 @@
 <meta charset="utf-8" />
 <title>Checkers - Human vs Computer</title>
 <style>
-  body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:#efe8d6;margin:0;font-family:sans-serif;flex-direction:column}
+  body{
+    display:flex;flex-direction:column;
+    justify-content:center;align-items:center;
+    min-height:100vh;margin:0;
+    background:linear-gradient(135deg,#2c2c2c,#1a1a1a);
+    font-family:"Segoe UI",sans-serif;color:#fff;
+  }
   .board{
     display:grid;
     grid-template-columns:repeat(8,1fr);
     grid-template-rows:repeat(8,1fr);
-    width:90vmin; height:90vmin;
-    max-width:600px; max-height:600px;
-    border:6px solid #6b4b2a;
+    width:90vmin;height:90vmin;
+    max-width:600px;max-height:600px;
+    border:8px solid #5a381e;border-radius:12px;
+    box-shadow:0 0 20px rgba(0,0,0,.6);
+    overflow:hidden;
   }
   .cell{display:flex;align-items:center;justify-content:center}
-  .dark{background:#8b5a2b}.light{background:#f1d9b5}
+  .dark{background:#3a2415}
+  .light{background:#d2b48c}
   .piece{
-    width:70%; height:70%;
+    width:70%;height:70%;
     border-radius:50%;
-    box-shadow:inset 0 4px 8px rgba(0,0,0,.3);
+    display:flex;align-items:center;justify-content:center;
+    font-size:2.2vmin;font-weight:bold;
+    box-shadow:inset 0 4px 8px rgba(0,0,0,.5),0 2px 5px rgba(0,0,0,.6);
+    transition:transform .2s;
   }
-  .blue{background:#1f7be5}.yellow{background:#f5d34b}
+  .blue{
+    background:radial-gradient(circle at 30% 30%,#5ab0ff,#1f7be5);
+    border:2px solid #0d4a94;
+  }
+  .yellow{
+    background:radial-gradient(circle at 30% 30%,#ffe97a,#f5d34b);
+    border:2px solid #c9a500;
+  }
+  .piece:hover{transform:scale(1.1)}
   .king::after{content:"♔";color:#000;font-size:2.5vmin}
-  .selected{outline:4px solid #3ddc84}
-  .highlight{box-shadow:inset 0 0 0 8px #ffd966aa;cursor:pointer}
-  #status{margin:10px;text-align:center;font-weight:bold;font-size:18px}
-  #controls{margin:10px;text-align:center}
-  button{padding:8px 14px;border:none;background:#1f7be5;color:white;font-weight:bold;border-radius:6px;cursor:pointer}
-  button:hover{background:#155aab}
-  #score{margin:10px;font-size:16px;font-weight:bold}
+  .selected{outline:4px solid #00ff99;outline-offset:-4px}
+  .highlight{box-shadow:0 0 15px 5px #ffd966aa inset,0 0 8px #ffd966}
+  #status{
+    margin:15px;
+    padding:10px 20px;
+    background:#222;border-radius:8px;
+    font-weight:bold;font-size:18px;
+    box-shadow:0 2px 6px rgba(0,0,0,.5);
+    text-align:center;
+  }
+  #controls{margin:10px}
+  button{
+    padding:10px 18px;
+    border:none;
+    background:linear-gradient(135deg,#1f7be5,#155aab);
+    color:white;
+    font-weight:bold;
+    border-radius:8px;
+    cursor:pointer;
+    transition:all .2s;
+  }
+  button:hover{background:linear-gradient(135deg,#2b8cff,#1c66c7);transform:scale(1.05)}
+  #score{
+    margin:10px;padding:8px 16px;
+    background:#333;border-radius:20px;
+    font-size:16px;font-weight:bold;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,.6);
+  }
 </style>
 </head>
 <body>
@@ -47,15 +88,13 @@ const boardEl=document.getElementById("board"),
       statusEl=document.getElementById("status"),
       scoreEl=document.getElementById("score");
 
-// Init board: Blue (AI) at top, Yellow (Human) at bottom
 function init(){
   board=Array.from({length:SIZE},()=>Array(SIZE).fill(null));
   for(let r=0;r<3;r++)for(let c=0;c<SIZE;c++)if((r+c)%2)board[r][c]={color:"blue",king:false}; // AI top
   for(let r=SIZE-3;r<SIZE;r++)for(let c=0;c<SIZE;c++)if((r+c)%2)board[r][c]={color:"yellow",king:false}; // Human bottom
-  turn="blue"; // Computer starts
-  selected=null;highlights=[];mustContinue=false;
+  turn="blue";selected=null;highlights=[];mustContinue=false;
   render();
-  setTimeout(aiMove,600); // AI starts
+  setTimeout(aiMove,400);
 }
 
 function render(){
@@ -74,7 +113,7 @@ function render(){
     }else if(turn==="yellow") cell.onclick=()=>onCell(r,c);
     boardEl.appendChild(cell);
   }
-  statusEl.textContent=turn==="yellow"?"Your turn (Yellow)":"Computer thinking…";
+  statusEl.textContent=turn==="yellow"?"✨ Your turn (Yellow)":"💻 Computer thinking…";
 }
 
 function onPiece(r,c){
@@ -92,7 +131,7 @@ function onCell(r,c){
 function inside(r,c){return r>=0&&r<SIZE&&c>=0&&c<SIZE;}
 function legalMoves(r,c){
   const p=board[r][c];if(!p)return[];
-  const dirs=[[1,-1],[1,1],[-1,-1],[ -1,1]];
+  const dirs=[[1,-1],[1,1],[-1,-1],[-1,1]];
   const fdirs=p.king?dirs:(p.color==="yellow"?[[-1,-1],[-1,1]]:[[1,-1],[1,1]]);
   const moves=[];
   for(const[dr,dc]of fdirs){const nr=r+dr,nc=c+dc;if(inside(nr,nc)&&!board[nr][nc])moves.push({r:nr,c:nc,captures:[],isCapture:false});}
@@ -112,7 +151,7 @@ function doMove(fr,fc,move){
   if(move.isCapture){const more=furtherCaps(move.r,move.c);if(more.length){selected={r:move.r,c:move.c};highlights=more;mustContinue=true;render();return;}}
   mustContinue=false;selected=null;highlights=[];turn=(turn==="blue"?"yellow":"blue");
   render();
-  if(turn==="blue")setTimeout(aiMove,600);
+  if(turn==="blue")setTimeout(aiMove,400);
 }
 
 function playerMoves(player){
@@ -121,24 +160,35 @@ function playerMoves(player){
   return ms;
 }
 function aiMove(){
-  const movesets=playerMoves("blue");if(!movesets.length){humanScore++;updateScore();statusEl.textContent="🎉 You win!";return;}
-  let caps=[];for(const s of movesets)for(const m of s.m)if(m.isCapture)caps.push({fr:s.r,fc:s.c,m});
+  const movesets=playerMoves("blue");
+  if(!movesets.length){humanScore++;updateScore();statusEl.textContent="🎉 You win!";return;}
+
+  // Capture moves
+  let captureMoves=[];
+  for(const s of movesets){
+    for(const m of s.m){
+      if(m.isCapture) captureMoves.push({fr:s.r,fc:s.c,m});
+    }
+  }
+
   let choice;
-  if(caps.length) choice=caps[Math.floor(Math.random()*caps.length)];
-  else {const all=movesets.flatMap(s=>s.m.map(m=>({fr:s.r,fc:s.c,m})));
-        choice=all[Math.floor(Math.random()*all.length)];}
+  if(captureMoves.length){
+    let maxKill=Math.max(...captureMoves.map(m=>m.m.captures.length));
+    let bestMoves=captureMoves.filter(m=>m.m.captures.length===maxKill);
+    choice=bestMoves[Math.floor(Math.random()*bestMoves.length)];
+  } else {
+    const all=movesets.flatMap(s=>s.m.map(m=>({fr:s.r,fc:s.c,m})));
+    choice=all[Math.floor(Math.random()*all.length)];
+  }
+
   doMove(choice.fr,choice.fc,choice.m);
-  // Check if human has moves left
   if(!playerMoves("yellow").length){aiScore++;updateScore();statusEl.textContent="💻 Computer wins!";}
 }
 
 function updateScore(){
   scoreEl.textContent=`You: ${humanScore} | Computer: ${aiScore}`;
 }
-
-function restartGame(){
-  init();
-}
+function restartGame(){init();}
 init();
 </script>
 </body>
