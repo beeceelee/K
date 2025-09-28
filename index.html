@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Checkers - Single Player vs AI</title>
+<style>
+  body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:#efe8d6;margin:0}
+  .board{display:grid;grid-template-columns:repeat(8,70px);grid-template-rows:repeat(8,70px);border:6px solid #6b4b2a}
+  .cell{width:70px;height:70px;display:flex;align-items:center;justify-content:center}
+  .dark{background:#8b5a2b}.light{background:#f1d9b5}
+  .piece{width:60%;height:60%;border-radius:50%;box-shadow:inset 0 4px 8px rgba(0,0,0,.3)}
+  .blue{background:#1f7be5}.yellow{background:#f5d34b}
+  .king::after{content:"♔";color:#000a;font-size:18px}
+  .selected{outline:4px solid #3ddc84}
+  .highlight{box-shadow:inset 0 0 0 8px #ffd966aa;cursor:pointer}
+  #status{margin:20px;font-weight:bold;font-family:sans-serif}
+</style>
+</head>
+<body>
+<div>
+  <div id="board" class="board"></div>
+  <div id="status">Loading…</div>
+</div>
+<script>
+const SIZE=8;
+let board=[],turn="blue",selected=null,highlights=[],mustContinue=false;
+const boardEl=document.getElementById("board"),statusEl=document.getElementById("status");
+
+function init(){
+  board=Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+  for(let r=0;r<3;r++)for(let c=0;c<SIZE;c++)if((r+c)%2)board[r][c]={color:"blue",king:false};
+  for(let r=SIZE-3;r<SIZE;r++)for(let c=0;c<SIZE;c++)if((r+c)%2)board[r][c]={color:"yellow",king:false};
+  turn="blue";selected=null;highlights=[];mustContinue=false;render();
+}
+function render(){
+  boardEl.innerHTML="";
+  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+    const cell=document.createElement("div");
+    cell.className="cell "+(((r+c)%2)?"dark":"light");
+    if(selected&&selected.r==r&&selected.c==c)cell.classList.add("selected");
+    if(highlights.some(h=>h.r==r&&h.c==c))cell.classList.add("highlight");
+    const p=board[r][c];
+    if(p){
+      const piece=document.createElement("div");
+      piece.className="piece "+p.color+(p.king?" king":"");
+      if(p.color==="blue")piece.onclick=e=>{e.stopPropagation();onPiece(r,c)};
+      cell.appendChild(piece);
+    }else cell.onclick=()=>onCell(r,c);
+    boardEl.appendChild(cell);
+  }
+  statusEl.textContent=turn==="blue"?"Your turn":"Computer thinking…";
+}
+function onPiece(r,c){
+  const p=board[r][c];if(!p||p.color!==turn)return;
+  if(mustContinue&&(!selected||selected.r!==r||selected.c!==c))return;
+  selected={r,c};highlights=legalMoves(r,c);
+  if(anyCapture(turn))highlights=highlights.filter(h=>h.isCapture);
+  render();
+}
+function onCell(r,c){
+  if(!selected)return;
+  const t=highlights.find(h=>h.r==r&&h.c==c);
+  if(t)doMove(selected.r,selected.c,t);
+}
+function inside(r,c){return r>=0&&r<SIZE&&c>=0&&c<SIZE;}
+function legalMoves(r,c){
+  const p=board[r][c];if(!p)return[];
+  const dirs=[[1,-1],[1,1],[-1,-1],[-1,1]];
+  const fdirs=p.king?dirs:(p.color==="blue"?[[1,-1],[1,1]]:[[-1,-1],[-1,1]]);
+  const moves=[];
+  for(const[dr,dc]of fdirs){const nr=r+dr,nc=c+dc;if(inside(nr,nc)&&!board[nr][nc])moves.push({r:nr,c:nc,captures:[],isCapture:false});}
+  for(const[dr,dc]of dirs){const mr=r+dr,mc=c+dc,lr=r+2*dr,lc=c+2*dc;
+    if(inside(lr,lc)&&board[mr]?.[mc]&&board[mr][mc].color!==p.color&&!board[lr][lc])
+      moves.push({r:lr,c:lc,captures:[{r:mr,c:mc}],isCapture:true});}
+  return moves;
+}
+function anyCapture(player){for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){const p=board[r][c];
+  if(p&&p.color===player&&legalMoves(r,c).some(m=>m.isCapture))return true;}return false;}
+function furtherCaps(r,c){return legalMoves(r,c).filter(m=>m.isCapture);}
+function doMove(fr,fc,move){
+  const p=board[fr][fc];board[move.r][move.c]={...p};board[fr][fc]=null;
+  if(move.captures)for(const cap of move.captures)board[cap.r][cap.c]=null;
+  const np=board[move.r][move.c];
+  if(!np.king){if(np.color==="blue"&&move.r===SIZE-1)np.king=true;if(np.color==="yellow"&&move.r===0)np.king=true;}
+  if(move.isCapture){const more=furtherCaps(move.r,move.c);if(more.length){selected={r:move.r,c:move.c};highlights=more;mustContinue=true;render();return;}}
+  mustContinue=false;selected=null;highlights=[];turn=(turn==="blue"?"yellow":"blue");
+  render();
+  if(turn==="yellow")setTimeout(aiMove,1000); // wait 1s then AI plays
+}
+function playerMoves(player){
+  let ms=[];for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){const p=board[r][c];
+    if(p&&p.color===player){const m=legalMoves(r,c);if(m.length)ms.push({r,c,m});}}
+  return ms;
+}
+function aiMove(){
+  const movesets=playerMoves("yellow");if(!movesets.length){statusEl.textContent="Game over: You win!";return;}
+  let caps=[];for(const s of movesets)for(const m of s.m)if(m.isCapture)caps.push({fr:s.r,fc:s.c,m});
+  let choice=(caps.length?caps[Math.floor(Math.random()*caps.length)]:movesets.flatMap(s=>s.m.map(m=>({fr:s.r,fc:s.c,m}))))[0];
+  doMove(choice.fr,choice.fc,choice.m);
+}
+init();
+</script>
+</body>
+</html>
