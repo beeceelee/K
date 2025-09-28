@@ -1,246 +1,236 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Myanmar Checkers</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
 <style>
   body {
-    margin:0;
-    background:linear-gradient(160deg,#0f2027,#203a43,#2c5364);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:flex-start;
-    min-height:100vh;
-    font-family:"Poppins",sans-serif;
-    color:#fff;
-    overflow:hidden;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
   }
-
-  /* BOARD */
-  .board {
-    display:grid;
-    grid-template-columns:repeat(8,1fr);
-    grid-template-rows:repeat(8,1fr);
-    width:95vmin;
-    height:95vmin;
-    max-width:600px;max-height:600px;
-    border:6px solid #111;
-    border-radius:16px;
-    box-shadow:0 0 25px rgba(0,0,0,.8), inset 0 0 10px rgba(255,255,255,.1);
-    margin-top:10px;
+  h1 { margin: 10px; font-size: 26px; }
+  #board {
+    display: grid;
+    grid-template: repeat(8, 1fr) / repeat(8, 1fr);
+    width: 95vmin;
+    height: 95vmin;
+    max-width: 500px;
+    max-height: 500px;
+    border: 4px solid #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 18px rgba(0,0,0,.6);
   }
-  .cell {display:flex;align-items:center;justify-content:center;}
-  .dark {background:#3b2f2f;}
-  .light {background:#d9b382;}
-  
-  /* PIECES */
+  .cell {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dark { background: #444; }
+  .light { background: #bbb; }
   .piece {
-    width:75%;height:75%;
-    border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    font-size:22px;
-    font-weight:bold;
-    box-shadow:inset 0 5px 10px rgba(0,0,0,.6),0 3px 8px rgba(0,0,0,.6);
-    transition:transform .15s;
+    border-radius: 50%;
+    width: 80%; height: 80%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 3px 6px rgba(0,0,0,.6);
+    transition: transform .2s;
   }
-  .blue {
-    background:radial-gradient(circle at 30% 30%,#6dd5ed,#2193b0);
-    border:2px solid #0c4d66;
+  .piece.blue { background: linear-gradient(145deg,#00c6ff,#0072ff); color: #fff; }
+  .piece.yellow { background: linear-gradient(145deg,#ffeb3b,#fbc02d); color: #000; }
+  .piece.king { border: 3px solid #fff; }
+  .highlight { outline: 3px solid #ff4081; }
+  #status { margin: 10px; font-size: 18px; }
+  #controls {
+    display: flex; gap: 10px; margin: 10px;
   }
-  .yellow {
-    background:radial-gradient(circle at 30% 30%,#ffe259,#f5d020);
-    border:2px solid #c4a600;
-  }
-  .piece:hover {transform:scale(1.1);}
-  .king::after {content:"♔";color:#000;font-size:20px;}
-  .selected {outline:4px solid #00ffa2;outline-offset:-4px;}
-  .highlight {box-shadow:0 0 20px 6px #ffd966aa inset,0 0 8px #ffd966;}
-
-  /* STATUS & SCORE */
-  #status, #score {
-    margin-top:12px;
-    padding:10px 20px;
-    border-radius:12px;
-    font-weight:bold;
-    font-size:18px;
-    text-align:center;
-    box-shadow:0 4px 12px rgba(0,0,0,.5);
-  }
-  #status {
-    background:linear-gradient(135deg,#1f1f1f,#333);
-  }
-  #score {
-    background:linear-gradient(135deg,#222,#444);
-  }
-
-  /* BUTTONS */
-  #controls {margin:12px;}
   button {
-    padding:14px 30px;
-    border:none;
-    border-radius:40px;
-    font-size:18px;
-    font-weight:bold;
-    cursor:pointer;
-    background:linear-gradient(145deg,#00c6ff,#0072ff);
-    color:white;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    box-shadow:0 6px 12px rgba(0,0,0,.4), inset 0 2px 4px rgba(255,255,255,.3);
-    transition:all .2s ease-in-out;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 40px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    background: linear-gradient(145deg, #00c6ff, #0072ff);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 6px 12px rgba(0,0,0,.4), inset 0 2px 4px rgba(255,255,255,.3);
+    transition: all .2s ease-in-out;
   }
   button:hover {
-    background:linear-gradient(145deg,#00d0ff,#1a82ff);
-    transform:scale(1.05);
-    box-shadow:0 8px 16px rgba(0,0,0,.6), inset 0 2px 6px rgba(255,255,255,.4);
+    background: linear-gradient(145deg, #00d0ff, #1a82ff);
+    transform: scale(1.05);
   }
-  button:active {transform:scale(0.95);}
+  button:active {
+    transform: scale(0.95);
+  }
+  #scoreboard {
+    margin: 10px;
+    padding: 10px 20px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    font-size: 16px;
+    display: flex;
+    gap: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,.5);
+  }
 </style>
 </head>
 <body>
-<div id="controls">
-  <button onclick="restartGame()">🔄 Restart Game</button>
-</div>
-<div id="board" class="board"></div>
-<div id="status">Loading…</div>
-<div id="score">You: 0 | Computer: 0</div>
-
+  <h1>Myanmar Checkers</h1>
+  <div id="board"></div>
+  <div id="status">Your turn (Blue)</div>
+  <div id="scoreboard"><span id="humanScore">You: 0</span><span id="aiScore">Computer: 0</span></div>
+  <div id="controls">
+    <button onclick="restartGame()">🔄 Restart</button>
+  </div>
 <script>
-const SIZE=8;
-let board=[],turn="blue",selected=null,highlights=[],mustContinue=false;
-let humanScore=0, aiScore=0;
-const boardEl=document.getElementById("board"),
-      statusEl=document.getElementById("status"),
-      scoreEl=document.getElementById("score");
-
-function init(){
-  board=Array.from({length:SIZE},()=>Array(SIZE).fill(null));
-  for(let r=0;r<3;r++)for(let c=0;c<SIZE;c++)if((r+c)%2)board[r][c]={color:"blue",king:false}; // AI top
-  for(let r=SIZE-3;r<SIZE;r++)for(let c=0;c<SIZE;c++)if((r+c)%2)board[r][c]={color:"yellow",king:false}; // Human bottom
-  turn="blue";selected=null;highlights=[];mustContinue=false;
-  render();
-  setTimeout(aiMove,400);
+const boardEl=document.getElementById("board");
+const statusEl=document.getElementById("status");
+let board=[],turn="blue",selected=null,moves=[];
+let humanScore=0,aiScore=0;
+function initBoard(){
+  board=[];for(let r=0;r<8;r++){let row=[];for(let c=0;c<8;c++){row.push(null);}board.push(row);}
+  // place pawns
+  for(let r=0;r<3;r++){for(let c=0;c<8;c++){if((r+c)%2===1)board[r][c]={color:"yellow",king:false};}}
+  for(let r=5;r<8;r++){for(let c=0;c<8;c++){if((r+c)%2===1)board[r][c]={color:"blue",king:false};}}
 }
-
 function render(){
   boardEl.innerHTML="";
-  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
-    const cell=document.createElement("div");
+  for(let r=0;r<8;r++){for(let c=0;c<8;c++){
+    let cell=document.createElement("div");
     cell.className="cell "+(((r+c)%2)?"dark":"light");
-    if(selected&&selected.r==r&&selected.c==c)cell.classList.add("selected");
-    if(highlights.some(h=>h.r==r&&h.c==c))cell.classList.add("highlight");
-    const p=board[r][c];
-    if(p){
-      const piece=document.createElement("div");
+    cell.dataset.r=r;cell.dataset.c=c;
+    if(board[r][c]){
+      let p=board[r][c];let piece=document.createElement("div");
       piece.className="piece "+p.color+(p.king?" king":"");
-      if(p.color==="yellow" && turn==="yellow")piece.onclick=e=>{e.stopPropagation();onPiece(r,c)};
+      piece.textContent=p.king?"K":"";
+      piece.onclick=()=>select(r,c);
+      if(selected&&selected.r===r&&selected.c===c)piece.classList.add("highlight");
       cell.appendChild(piece);
-    }else if(turn==="yellow") cell.onclick=()=>onCell(r,c);
+    }
+    else if(moves.some(m=>m.r===r&&m.c===c)){
+      cell.classList.add("highlight");
+      cell.onclick=()=>moveTo(r,c);
+    }
     boardEl.appendChild(cell);
+  }}
+}
+function inside(r,c){return r>=0&&c>=0&&r<8&&c<8;}
+function select(r,c){
+  if(turn!=="blue")return;
+  if(board[r][c]&&board[r][c].color==="blue"){
+    selected={r,c};moves=legalMoves(r,c,true);render();
   }
-  statusEl.textContent=turn==="yellow"?"✨ Your turn (Yellow)":"💻 Computer thinking…";
 }
-
-function onPiece(r,c){
-  const p=board[r][c];if(!p||p.color!==turn)return;
-  if(mustContinue&&(!selected||selected.r!==r||selected.c!==c))return;
-  selected={r,c};highlights=legalMoves(r,c);
-  if(anyCapture(turn))highlights=highlights.filter(h=>h.isCapture);
-  render();
-}
-function onCell(r,c){
+function moveTo(r,c){
   if(!selected)return;
-  const t=highlights.find(h=>h.r==r&&h.c==c);
-  if(t)doMove(selected.r,selected.c,t);
+  let move=moves.find(m=>m.r===r&&m.c===c);
+  if(!move)return;
+  doMove(selected.r,selected.c,move);
+  selected=null;moves=[];render();
+  if(turn==="yellow")setTimeout(aiMove,400);
 }
-function inside(r,c){return r>=0&&r<SIZE&&c>=0&&c<SIZE;}
-
-/* Myanmar style King: Flying */
-function legalMoves(r,c){
-  const p=board[r][c]; if(!p) return [];
+function doMove(r,c,move){
+  let p=board[r][c];board[r][c]=null;
+  board[move.r][move.c]=p;
+  // captures
+  if(move.captures)move.captures.forEach(cap=>{board[cap.r][cap.c]=null;});
+  // king promotion
+  if(!p.king&&((p.color==="blue"&&move.r===0)||(p.color==="yellow"&&move.r===7)))p.king=true;
+  // check further captures
+  if(move.isCapture){
+    let caps=legalMoves(move.r,move.c,true).filter(m=>m.isCapture);
+    if(caps.length){selected={r:move.r,c:move.c};moves=caps;render();return;}
+  }
+  turn=(p.color==="blue")?"yellow":"blue";
+  checkGameOver();
+}
+function checkGameOver(){
+  let blueLeft=board.flat().some(p=>p&&p.color==="blue");
+  let yellowLeft=board.flat().some(p=>p&&p.color==="yellow");
+  if(!blueLeft){aiScore++;updateScore();statusEl.textContent="💻 Computer wins!";turn="end";}
+  else if(!yellowLeft){humanScore++;updateScore();statusEl.textContent="🎉 You win!";turn="end";}
+}
+function updateScore(){
+  document.getElementById("humanScore").textContent="You: "+humanScore;
+  document.getElementById("aiScore").textContent="Computer: "+aiScore;
+}
+function restartGame(){initBoard();turn="blue";selected=null;moves=[];statusEl.textContent="Your turn (Blue)";render();}
+function legalMoves(r,c,enforceLongest=false){
+  const p=board[r][c];if(!p)return[];
   const moves=[];
   if(!p.king){
-    const dirs=p.color==="yellow"?[[-1,-1],[-1,1]]:[[1,-1],[1,1]];
-    for(const[dr,dc] of dirs){
+    const dirs=[[1,-1],[1,1],[-1,-1],[-1,1]];
+    for(const[dr,dc]of dirs){
       const nr=r+dr,nc=c+dc;
-      if(inside(nr,nc)&&!board[nr][nc])moves.push({r:nr,c:nc,captures:[],isCapture:false});
+      if(inside(nr,nc)&&!board[nr][nc]&&!enforceLongest)moves.push({r:nr,c:nc,captures:[],isCapture:false});
     }
-    for(const[dr,dc] of [[1,-1],[1,1],[-1,-1],[-1,1]]){
+    for(const[dr,dc]of dirs){
       const mr=r+dr,mc=c+dc,lr=r+2*dr,lc=c+2*dc;
       if(inside(lr,lc)&&board[mr]?.[mc]&&board[mr][mc].color!==p.color&&!board[lr][lc]){
         moves.push({r:lr,c:lc,captures:[{r:mr,c:mc}],isCapture:true});
       }
     }
-  } else {
+  }else{
+    // flying king
     const dirs=[[1,-1],[1,1],[-1,-1],[-1,1]];
-    for(const[dr,dc] of dirs){
+    for(const[dr,dc]of dirs){
       let nr=r+dr,nc=c+dc;let captured=null;
       while(inside(nr,nc)){
-        if(!board[nr][nc]&&!captured){
-          moves.push({r:nr,c:nc,captures:[],isCapture:false});
-        } else if(board[nr][nc]&&board[nr][nc].color!==p.color&&!captured){
-          captured={r:nr,c:nc};
-        } else if(captured&&!board[nr][nc]){
+        if(!board[nr][nc]&&!captured&&!enforceLongest)moves.push({r:nr,c:nc,captures:[],isCapture:false});
+        else if(board[nr][nc]&&board[nr][nc].color!==p.color&&!captured){captured={r:nr,c:nc};}
+        else if(captured&&!board[nr][nc]){
           moves.push({r:nr,c:nc,captures:[captured],isCapture:true});
-        } else break;
+        }else break;
         nr+=dr;nc+=dc;
       }
     }
   }
+  // enforce longest capture rule
+  if(moves.some(m=>m.isCapture)){
+    const maxCap=Math.max(...moves.map(m=>m.captures.length));
+    return moves.filter(m=>m.isCapture&&m.captures.length===maxCap);
+  }
   return moves;
 }
-
-function anyCapture(player){
-  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
-    const p=board[r][c];
-    if(p&&p.color===player&&legalMoves(r,c).some(m=>m.isCapture))return true;
-  }
-  return false;
-}
-function furtherCaps(r,c){return legalMoves(r,c).filter(m=>m.isCapture);}
-function doMove(fr,fc,move){
-  const p=board[fr][fc];board[move.r][move.c]={...p};board[fr][fc]=null;
-  if(move.captures)for(const cap of move.captures)board[cap.r][cap.c]=null;
-  const np=board[move.r][move.c];
-  if(!np.king){if(np.color==="yellow"&&move.r===0)np.king=true;if(np.color==="blue"&&move.r===SIZE-1)np.king=true;}
-  if(move.isCapture){const more=furtherCaps(move.r,move.c);
-    if(more.length){selected={r:move.r,c:move.c};highlights=more;mustContinue=true;render();return;}
-  }
-  mustContinue=false;selected=null;highlights=[];turn=(turn==="blue"?"yellow":"blue");
-  render();
-  if(turn==="blue")setTimeout(aiMove,400);
-}
-
-function playerMoves(player){
-  let ms=[];for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){const p=board[r][c];
-    if(p&&p.color===player){const m=legalMoves(r,c);if(m.length)ms.push({r,c,m});}}
-  return ms;
+function playerMoves(color){
+  let all=[];for(let r=0;r<8;r++){for(let c=0;c<8;c++){if(board[r][c]?.color===color){all.push({r,c,m:legalMoves(r,c)});}}}
+  return all.filter(s=>s.m.length);
 }
 function aiMove(){
-  const movesets=playerMoves("blue");
-  if(!movesets.length){humanScore++;updateScore();statusEl.textContent="🎉 You win!";return;}
-  let captureMoves=[];
-  for(const s of movesets){for(const m of s.m){if(m.isCapture)captureMoves.push({fr:s.r,fc:s.c,m});}}
+  if(turn!=="yellow")return;
+  const movesets=playerMoves("yellow");
+  if(!movesets.length){humanScore++;updateScore();statusEl.textContent="🎉 You win!";turn="end";return;}
+  // mandatory capture longest
+  let allMoves=[];
+  movesets.forEach(s=>s.m.forEach(m=>allMoves.push({fr:s.r,fc:s.c,m})));
+  let captureMoves=allMoves.filter(x=>x.m.isCapture);
   let choice;
   if(captureMoves.length){
     let maxKill=Math.max(...captureMoves.map(m=>m.m.captures.length));
-    let bestMoves=captureMoves.filter(m=>m.m.captures.length===maxKill);
-    choice=bestMoves[Math.floor(Math.random()*bestMoves.length)];
-  } else {
-    const all=movesets.flatMap(s=>s.m.map(m=>({fr:s.r,fc:s.c,m})));
-    choice=all[Math.floor(Math.random()*all.length)];
+    let best=captureMoves.filter(m=>m.m.captures.length===maxKill);
+    choice=best[Math.floor(Math.random()*best.length)];
+  }else{
+    choice=allMoves[Math.floor(Math.random()*allMoves.length)];
   }
   doMove(choice.fr,choice.fc,choice.m);
-  if(!playerMoves("yellow").length){aiScore++;updateScore();statusEl.textContent="💻 Computer wins!";}
+  render();
+  if(turn==="blue")statusEl.textContent="Your turn (Blue)";
+  else if(turn==="yellow")setTimeout(aiMove,400);
 }
-
-function updateScore(){scoreEl.textContent=`You: ${humanScore} | Computer: ${aiScore}`;}
-function restartGame(){init();}
-init();
+restartGame();
 </script>
 </body>
 </html>
