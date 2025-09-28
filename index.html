@@ -6,207 +6,147 @@
 <title>Myanmar Checkers</title>
 <style>
   body {
+    font-family: sans-serif;
+    text-align: center;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    color: white;
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    min-height: 100vh;
   }
-  h1 { margin: 10px; font-size: 26px; }
+  h1 { margin: 10px 0; font-size: 1.5rem; }
   #board {
     display: grid;
-    grid-template: repeat(8, 1fr) / repeat(8, 1fr);
-    width: 95vmin;
-    height: 95vmin;
-    max-width: 500px;
-    max-height: 500px;
-    border: 4px solid #fff;
-    border-radius: 16px;
+    grid-template-columns: repeat(8, 1fr);
+    width: 90vmin; height: 90vmin;
+    margin: 10px auto;
+    border: 4px solid #334155;
+    border-radius: 15px;
     overflow: hidden;
-    box-shadow: 0 8px 18px rgba(0,0,0,.6);
   }
   .cell {
-    width: 100%; height: 100%;
     display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; user-select: none;
   }
-  .dark { background: #444; }
-  .light { background: #bbb; }
+  .dark { background: #475569; }
+  .light { background: #94a3b8; }
   .piece {
-    border-radius: 50%;
     width: 80%; height: 80%;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 3px 6px rgba(0,0,0,.6);
-    transition: transform .2s;
+    border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,.4);
   }
-  .piece.blue { background: linear-gradient(145deg,#00c6ff,#0072ff); color: #fff; }
-  .piece.yellow { background: linear-gradient(145deg,#ffeb3b,#fbc02d); color: #000; }
-  .piece.king { border: 3px solid #fff; }
-  .highlight { outline: 3px solid #ff4081; }
-  #status { margin: 10px; font-size: 18px; }
-  #controls {
-    display: flex; gap: 10px; margin: 10px;
-  }
+  .blue { background: #3b82f6; }
+  .yellow { background: #facc15; }
+  .king { border: 3px solid white; }
+  .highlight { outline: 3px solid #22c55e; }
   button {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 40px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    background: linear-gradient(145deg, #00c6ff, #0072ff);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    box-shadow: 0 6px 12px rgba(0,0,0,.4), inset 0 2px 4px rgba(255,255,255,.3);
-    transition: all .2s ease-in-out;
-  }
-  button:hover {
-    background: linear-gradient(145deg, #00d0ff, #1a82ff);
-    transform: scale(1.05);
-  }
-  button:active {
-    transform: scale(0.95);
-  }
-  #scoreboard {
-    margin: 10px;
     padding: 10px 20px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 12px;
-    font-size: 16px;
-    display: flex;
-    gap: 20px;
-    box-shadow: 0 4px 10px rgba(0,0,0,.5);
+    font-size: 1rem;
+    margin: 10px;
+    border: none; border-radius: 8px;
+    background: #3b82f6; color: white;
+    box-shadow: 0 3px 6px rgba(0,0,0,.3);
   }
+  #status { margin: 5px; font-weight: bold; }
 </style>
 </head>
 <body>
-  <h1>Myanmar Checkers</h1>
-  <div id="board"></div>
-  <div id="status">Your turn (Blue)</div>
-  <div id="scoreboard"><span id="humanScore">You: 0</span><span id="aiScore">Computer: 0</span></div>
-  <div id="controls">
-    <button onclick="restartGame()">🔄 Restart</button>
-  </div>
+<h1>Myanmar Checkers</h1>
+<div id="status">Your turn (Blue)</div>
+<div id="board"></div>
+<button onclick="restart()">Restart</button>
 <script>
+const size=8;
+let board,turn,selected,moves;
 const boardEl=document.getElementById("board");
 const statusEl=document.getElementById("status");
-let board=[],turn="blue",selected=null,moves=[];
-let humanScore=0,aiScore=0;
+
+function inside(r,c){return r>=0&&r<size&&c>=0&&c<size;}
 
 function initBoard(){
-  board=[];for(let r=0;r<8;r++){let row=[];for(let c=0;c<8;c++){row.push(null);}board.push(row);}
-  for(let r=0;r<3;r++){for(let c=0;c<8;c++){if((r+c)%2===1)board[r][c]={color:"yellow",king:false};}}
-  for(let r=5;r<8;r++){for(let c=0;c<8;c++){if((r+c)%2===1)board[r][c]={color:"blue",king:false};}}
+  board=Array.from({length:size},()=>Array(size).fill(null));
+  // Yellow (AI) at top
+  for(let r=0;r<3;r++){
+    for(let c=0;c<size;c++) if((r+c)%2===1) board[r][c]={color:"yellow",king:false};
+  }
+  // Blue (Human) at bottom
+  for(let r=size-3;r<size;r++){
+    for(let c=0;c<size;c++) if((r+c)%2===1) board[r][c]={color:"blue",king:false};
+  }
+  turn="blue"; selected=null; moves=[];
 }
 
 function render(){
   boardEl.innerHTML="";
-  for(let r=0;r<8;r++){for(let c=0;c<8;c++){
-    let cell=document.createElement("div");
-    cell.className="cell "+(((r+c)%2)?"dark":"light");
-    cell.dataset.r=r;cell.dataset.c=c;
-    if(board[r][c]){
-      let p=board[r][c];let piece=document.createElement("div");
-      piece.className="piece "+p.color+(p.king?" king":"");
-      piece.textContent=p.king?"K":"";
-      piece.onclick=()=>select(r,c);
-      if(selected&&selected.r===r&&selected.c===c)piece.classList.add("highlight");
-      cell.appendChild(piece);
+  for(let r=0;r<size;r++){
+    for(let c=0;c<size;c++){
+      const cell=document.createElement("div");
+      cell.className="cell "+(((r+c)%2)?"dark":"light");
+      cell.onclick=()=>select(r,c);
+      if(board[r][c]){
+        const p=document.createElement("div");
+        p.className="piece "+board[r][c].color+(board[r][c].king?" king":"");
+        cell.appendChild(p);
+      }
+      if(selected && selected.r===r && selected.c===c) cell.classList.add("highlight");
+      if(moves.some(m=>m.r===r&&m.c===c)) cell.classList.add("highlight");
+      boardEl.appendChild(cell);
     }
-    else if(moves.some(m=>m.r===r&&m.c===c)){
-      cell.classList.add("highlight");
-      cell.onclick=()=>moveTo(r,c);
-    }
-    boardEl.appendChild(cell);
-  }}
+  }
 }
-
-function inside(r,c){return r>=0&&c>=0&&r<8&&c<8;}
 
 function select(r,c){
   if(turn!=="blue")return;
   if(board[r][c]&&board[r][c].color==="blue"){
     selected={r,c};
-    moves=legalMoves(r,c); // normal moves included
+    moves=legalMoves(r,c);
     render();
+  } else if(selected){
+    const m=moves.find(x=>x.r===r&&x.c===c);
+    if(m){ doMove(selected.r,selected.c,m); render(); }
   }
 }
 
-function moveTo(r,c){
-  if(!selected)return;
-  let move=moves.find(m=>m.r===r&&m.c===c);
-  if(!move)return;
-  doMove(selected.r,selected.c,move);
-  selected=null;moves=[];render();
-  if(turn==="yellow")setTimeout(aiMove,400);
-}
-
-function doMove(r,c,move){
-  let p=board[r][c];board[r][c]=null;
-  board[move.r][move.c]=p;
-  if(move.captures)move.captures.forEach(cap=>{board[cap.r][cap.c]=null;});
-  if(!p.king&&((p.color==="blue"&&move.r===0)||(p.color==="yellow"&&move.r===7)))p.king=true;
-  if(move.isCapture){
-    let caps=legalMoves(move.r,move.c).filter(m=>m.isCapture);
-    if(caps.length&&turn===p.color){
-      selected={r:move.r,c:move.c};moves=caps;render();return;
-    }
-  }
-  turn=(p.color==="blue")?"yellow":"blue";
-  checkGameOver();
-}
-
-function checkGameOver(){
-  let blueLeft=board.flat().some(p=>p&&p.color==="blue");
-  let yellowLeft=board.flat().some(p=>p&&p.color==="yellow");
-  if(!blueLeft){aiScore++;updateScore();statusEl.textContent="💻 Computer wins!";turn="end";}
-  else if(!yellowLeft){humanScore++;updateScore();statusEl.textContent="🎉 You win!";turn="end";}
-}
-
-function updateScore(){
-  document.getElementById("humanScore").textContent="You: "+humanScore;
-  document.getElementById("aiScore").textContent="Computer: "+aiScore;
-}
-
-function restartGame(){initBoard();turn="blue";selected=null;moves=[];statusEl.textContent="Your turn (Blue)";render();}
-
+// === MOVE GENERATION ===
 function legalMoves(r,c){
-  const p=board[r][c];if(!p)return[];
-  const moves=[];
+  const p=board[r][c]; if(!p) return [];
+  let moves=[];
+
   if(!p.king){
-    const dirs=[[1,-1],[1,1],[-1,-1],[-1,1]];
-    for(const[dr,dc]of dirs){
-      const nr=r+dr,nc=c+dc;
-      if(inside(nr,nc)&&!board[nr][nc])moves.push({r:nr,c:nc,captures:[],isCapture:false});
+    // Forward directions only
+    const forwardDirs = p.color==="blue" ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
+
+    // ✅ Normal move
+    for(const[dr,dc] of forwardDirs){
+      const nr=r+dr, nc=c+dc;
+      if(inside(nr,nc)&&!board[nr][nc]){
+        moves.push({r:nr,c:nc,captures:[],isCapture:false});
+      }
     }
-    for(const[dr,dc]of dirs){
-      const mr=r+dr,mc=c+dc,lr=r+2*dr,lc=c+2*dc;
+
+    // ✅ Forward captures only
+    for(const[dr,dc] of forwardDirs){
+      const mr=r+dr, mc=c+dc, lr=r+2*dr, lc=c+2*dc;
       if(inside(lr,lc)&&board[mr]?.[mc]&&board[mr][mc].color!==p.color&&!board[lr][lc]){
         moves.push({r:lr,c:lc,captures:[{r:mr,c:mc}],isCapture:true});
       }
     }
-  }else{
+  } else {
+    // Flying king
     const dirs=[[1,-1],[1,1],[-1,-1],[-1,1]];
-    for(const[dr,dc]of dirs){
-      let nr=r+dr,nc=c+dc;let captured=null;
+    for(const[dr,dc] of dirs){
+      let nr=r+dr,nc=c+dc,captured=null;
       while(inside(nr,nc)){
-        if(!board[nr][nc]&&!captured)moves.push({r:nr,c:nc,captures:[],isCapture:false});
-        else if(board[nr][nc]&&board[nr][nc].color!==p.color&&!captured){captured={r:nr,c:nc};}
-        else if(captured&&!board[nr][nc]){
+        if(!board[nr][nc]&&!captured){
+          moves.push({r:nr,c:nc,captures:[],isCapture:false});
+        } else if(board[nr][nc]&&board[nr][nc].color!==p.color&&!captured){
+          captured={r:nr,c:nc};
+        } else if(captured&&!board[nr][nc]){
           moves.push({r:nr,c:nc,captures:[captured],isCapture:true});
-        }else break;
-        nr+=dr;nc+=dc;
+        } else break;
+        nr+=dr; nc+=dc;
       }
     }
   }
+
+  // Enforce capture rule
   if(moves.some(m=>m.isCapture)){
     const maxCap=Math.max(...moves.map(m=>m.captures.length));
     return moves.filter(m=>m.isCapture&&m.captures.length===maxCap);
@@ -214,47 +154,76 @@ function legalMoves(r,c){
   return moves;
 }
 
-function playerMoves(color){
-  let all=[];for(let r=0;r<8;r++){for(let c=0;c<8;c++){if(board[r][c]?.color===color){all.push({r,c,m:legalMoves(r,c)});}}}
-  return all.filter(s=>s.m.length);
+function doMove(r,c,m){
+  const p=board[r][c]; board[r][c]=null; board[m.r][m.c]=p;
+  m.captures.forEach(cap=>board[cap.r][cap.c]=null);
+  if((p.color==="blue"&&m.r===0)||(p.color==="yellow"&&m.r===size-1)) p.king=true;
+
+  if(m.isCapture){
+    const further=legalMoves(m.r,m.c).filter(x=>x.isCapture);
+    if(further.length&&turn==="blue"){
+      selected={r:m.r,c:m.c}; moves=further; render(); return;
+    }
+  }
+  turn=(turn==="blue"?"yellow":"blue");
+  selected=null;moves=[];render();
+  if(turn==="yellow") setTimeout(aiMove,500);
 }
 
+function playerMoves(color){
+  let res=[];
+  for(let r=0;r<size;r++)for(let c=0;c<size;c++){
+    if(board[r][c]?.color===color){
+      let ms=legalMoves(r,c);
+      if(ms.length) res.push({r,c,m:ms});
+    }
+  }
+  return res;
+}
+
+// === AI ===
 function aiMove(){
-  if(turn!=="yellow") return;
+  if(turn!=="yellow")return;
   const movesets=playerMoves("yellow");
-  if(!movesets.length){humanScore++;updateScore();statusEl.textContent="🎉 You win!";turn="end";return;}
-  let allMoves=[];movesets.forEach(s=>s.m.forEach(m=>allMoves.push({fr:s.r,fc:s.c,m})));
+  if(!movesets.length){
+    statusEl.textContent="🎉 You win!";
+    turn="end"; return;
+  }
+  let allMoves=[];
+  movesets.forEach(s=>s.m.forEach(m=>allMoves.push({fr:s.r,fc:s.c,m})));
+
   let captureMoves=allMoves.filter(x=>x.m.isCapture);
   let choice;
   if(captureMoves.length){
     let maxKill=Math.max(...captureMoves.map(m=>m.m.captures.length));
     let best=captureMoves.filter(m=>m.m.captures.length===maxKill);
     choice=best[Math.floor(Math.random()*best.length)];
-  }else{
+  } else {
     choice=allMoves[Math.floor(Math.random()*allMoves.length)];
   }
-  function executeAI(fr,fc,move){
-    doMove(fr,fc,move);render();
+
+  function exec(fr,fc,m){
+    doMove(fr,fc,m); render();
     if(turn==="yellow"){
       setTimeout(()=>{
-        const nextMoves=legalMoves(move.r,move.c).filter(m=>m.isCapture);
-        if(nextMoves.length){
-          let maxKill=Math.max(...nextMoves.map(m=>m.captures.length));
-          let best=nextMoves.filter(m=>m.captures.length===maxKill);
-          let nextChoice=best[Math.floor(Math.random()*best.length)];
-          executeAI(move.r,move.c,nextChoice);
-        }else{
-          turn="blue";
-          statusEl.textContent="Your turn (Blue)";
-        }
-      },300);
-    }else if(turn==="blue"){
+        const next=legalMoves(m.r,m.c).filter(x=>x.isCapture);
+        if(next.length){
+          let maxKill=Math.max(...next.map(x=>x.captures.length));
+          let best=next.filter(x=>x.captures.length===maxKill);
+          let nc=best[Math.floor(Math.random()*best.length)];
+          exec(m.r,m.c,nc);
+        } else { turn="blue"; statusEl.textContent="Your turn (Blue)"; }
+      },400);
+    } else if(turn==="blue"){
       statusEl.textContent="Your turn (Blue)";
     }
   }
-  executeAI(choice.fr,choice.fc,choice.m);
+  exec(choice.fr,choice.fc,choice.m);
 }
-restartGame();
+
+function restart(){initBoard();render();statusEl.textContent="Your turn (Blue)";}
+
+initBoard();render();
 </script>
 </body>
 </html>
