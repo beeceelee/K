@@ -2,79 +2,108 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Checkers - Human vs Computer</title>
+<title>Myanmar Checkers</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
 <style>
-  body{
-    display:flex;flex-direction:column;
-    justify-content:center;align-items:center;
-    min-height:100vh;margin:0;
-    background:linear-gradient(135deg,#2c2c2c,#1a1a1a);
-    font-family:"Segoe UI",sans-serif;color:#fff;
+  body {
+    margin:0;
+    background:linear-gradient(160deg,#0f2027,#203a43,#2c5364);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    min-height:100vh;
+    font-family:"Poppins",sans-serif;
+    color:#fff;
+    overflow:hidden;
   }
-  .board{
+
+  /* BOARD */
+  .board {
     display:grid;
     grid-template-columns:repeat(8,1fr);
     grid-template-rows:repeat(8,1fr);
-    width:90vmin;height:90vmin;
+    width:95vmin;
+    height:95vmin;
     max-width:600px;max-height:600px;
-    border:8px solid #5a381e;border-radius:12px;
-    box-shadow:0 0 20px rgba(0,0,0,.6);
-    overflow:hidden;
+    border:6px solid #111;
+    border-radius:16px;
+    box-shadow:0 0 25px rgba(0,0,0,.8), inset 0 0 10px rgba(255,255,255,.1);
+    margin-top:10px;
   }
-  .cell{display:flex;align-items:center;justify-content:center}
-  .dark{background:#3a2415}
-  .light{background:#d2b48c}
-  .piece{
-    width:70%;height:70%;
+  .cell {display:flex;align-items:center;justify-content:center;}
+  .dark {background:#3b2f2f;}
+  .light {background:#d9b382;}
+  
+  /* PIECES */
+  .piece {
+    width:75%;height:75%;
     border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    font-size:2.2vmin;font-weight:bold;
-    box-shadow:inset 0 4px 8px rgba(0,0,0,.5),0 2px 5px rgba(0,0,0,.6);
-    transition:transform .2s;
-  }
-  .blue{
-    background:radial-gradient(circle at 30% 30%,#5ab0ff,#1f7be5);
-    border:2px solid #0d4a94;
-  }
-  .yellow{
-    background:radial-gradient(circle at 30% 30%,#ffe97a,#f5d34b);
-    border:2px solid #c9a500;
-  }
-  .piece:hover{transform:scale(1.1)}
-  .king::after{content:"♔";color:#000;font-size:2.5vmin}
-  .selected{outline:4px solid #00ff99;outline-offset:-4px}
-  .highlight{box-shadow:0 0 15px 5px #ffd966aa inset,0 0 8px #ffd966}
-  #status{
-    margin:15px;
-    padding:10px 20px;
-    background:#222;border-radius:8px;
-    font-weight:bold;font-size:18px;
-    box-shadow:0 2px 6px rgba(0,0,0,.5);
-    text-align:center;
-  }
-  #controls{margin:10px}
-  button{
-    padding:10px 18px;
-    border:none;
-    background:linear-gradient(135deg,#1f7be5,#155aab);
-    color:white;
+    font-size:22px;
     font-weight:bold;
-    border-radius:8px;
+    box-shadow:inset 0 5px 10px rgba(0,0,0,.6),0 3px 8px rgba(0,0,0,.6);
+    transition:transform .15s;
+  }
+  .blue {
+    background:radial-gradient(circle at 30% 30%,#6dd5ed,#2193b0);
+    border:2px solid #0c4d66;
+  }
+  .yellow {
+    background:radial-gradient(circle at 30% 30%,#ffe259,#f5d020);
+    border:2px solid #c4a600;
+  }
+  .piece:hover {transform:scale(1.1);}
+  .king::after {content:"♔";color:#000;font-size:20px;}
+  .selected {outline:4px solid #00ffa2;outline-offset:-4px;}
+  .highlight {box-shadow:0 0 20px 6px #ffd966aa inset,0 0 8px #ffd966;}
+
+  /* STATUS & SCORE */
+  #status, #score {
+    margin-top:12px;
+    padding:10px 20px;
+    border-radius:12px;
+    font-weight:bold;
+    font-size:18px;
+    text-align:center;
+    box-shadow:0 4px 12px rgba(0,0,0,.5);
+  }
+  #status {
+    background:linear-gradient(135deg,#1f1f1f,#333);
+  }
+  #score {
+    background:linear-gradient(135deg,#222,#444);
+  }
+
+  /* BUTTONS */
+  #controls {margin:12px;}
+  button {
+    padding:14px 30px;
+    border:none;
+    border-radius:40px;
+    font-size:18px;
+    font-weight:bold;
     cursor:pointer;
-    transition:all .2s;
+    background:linear-gradient(145deg,#00c6ff,#0072ff);
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    box-shadow:0 6px 12px rgba(0,0,0,.4), inset 0 2px 4px rgba(255,255,255,.3);
+    transition:all .2s ease-in-out;
   }
-  button:hover{background:linear-gradient(135deg,#2b8cff,#1c66c7);transform:scale(1.05)}
-  #score{
-    margin:10px;padding:8px 16px;
-    background:#333;border-radius:20px;
-    font-size:16px;font-weight:bold;
-    box-shadow:inset 0 2px 4px rgba(0,0,0,.6);
+  button:hover {
+    background:linear-gradient(145deg,#00d0ff,#1a82ff);
+    transform:scale(1.05);
+    box-shadow:0 8px 16px rgba(0,0,0,.6), inset 0 2px 6px rgba(255,255,255,.4);
   }
+  button:active {transform:scale(0.95);}
 </style>
 </head>
 <body>
 <div id="controls">
-  <button onclick="restartGame()">🔄 Restart</button>
+  <button onclick="restartGame()">🔄 Restart Game</button>
 </div>
 <div id="board" class="board"></div>
 <div id="status">Loading…</div>
@@ -129,26 +158,58 @@ function onCell(r,c){
   if(t)doMove(selected.r,selected.c,t);
 }
 function inside(r,c){return r>=0&&r<SIZE&&c>=0&&c<SIZE;}
+
+/* Myanmar style King: Flying */
 function legalMoves(r,c){
-  const p=board[r][c];if(!p)return[];
-  const dirs=[[1,-1],[1,1],[-1,-1],[-1,1]];
-  const fdirs=p.king?dirs:(p.color==="yellow"?[[-1,-1],[-1,1]]:[[1,-1],[1,1]]);
+  const p=board[r][c]; if(!p) return [];
   const moves=[];
-  for(const[dr,dc]of fdirs){const nr=r+dr,nc=c+dc;if(inside(nr,nc)&&!board[nr][nc])moves.push({r:nr,c:nc,captures:[],isCapture:false});}
-  for(const[dr,dc]of dirs){const mr=r+dr,mc=c+dc,lr=r+2*dr,lc=c+2*dc;
-    if(inside(lr,lc)&&board[mr]?.[mc]&&board[mr][mc].color!==p.color&&!board[lr][lc])
-      moves.push({r:lr,c:lc,captures:[{r:mr,c:mc}],isCapture:true});}
+  if(!p.king){
+    const dirs=p.color==="yellow"?[[-1,-1],[-1,1]]:[[1,-1],[1,1]];
+    for(const[dr,dc] of dirs){
+      const nr=r+dr,nc=c+dc;
+      if(inside(nr,nc)&&!board[nr][nc])moves.push({r:nr,c:nc,captures:[],isCapture:false});
+    }
+    for(const[dr,dc] of [[1,-1],[1,1],[-1,-1],[-1,1]]){
+      const mr=r+dr,mc=c+dc,lr=r+2*dr,lc=c+2*dc;
+      if(inside(lr,lc)&&board[mr]?.[mc]&&board[mr][mc].color!==p.color&&!board[lr][lc]){
+        moves.push({r:lr,c:lc,captures:[{r:mr,c:mc}],isCapture:true});
+      }
+    }
+  } else {
+    const dirs=[[1,-1],[1,1],[-1,-1],[-1,1]];
+    for(const[dr,dc] of dirs){
+      let nr=r+dr,nc=c+dc;let captured=null;
+      while(inside(nr,nc)){
+        if(!board[nr][nc]&&!captured){
+          moves.push({r:nr,c:nc,captures:[],isCapture:false});
+        } else if(board[nr][nc]&&board[nr][nc].color!==p.color&&!captured){
+          captured={r:nr,c:nc};
+        } else if(captured&&!board[nr][nc]){
+          moves.push({r:nr,c:nc,captures:[captured],isCapture:true});
+        } else break;
+        nr+=dr;nc+=dc;
+      }
+    }
+  }
   return moves;
 }
-function anyCapture(player){for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){const p=board[r][c];
-  if(p&&p.color===player&&legalMoves(r,c).some(m=>m.isCapture))return true;}return false;}
+
+function anyCapture(player){
+  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+    const p=board[r][c];
+    if(p&&p.color===player&&legalMoves(r,c).some(m=>m.isCapture))return true;
+  }
+  return false;
+}
 function furtherCaps(r,c){return legalMoves(r,c).filter(m=>m.isCapture);}
 function doMove(fr,fc,move){
   const p=board[fr][fc];board[move.r][move.c]={...p};board[fr][fc]=null;
   if(move.captures)for(const cap of move.captures)board[cap.r][cap.c]=null;
   const np=board[move.r][move.c];
   if(!np.king){if(np.color==="yellow"&&move.r===0)np.king=true;if(np.color==="blue"&&move.r===SIZE-1)np.king=true;}
-  if(move.isCapture){const more=furtherCaps(move.r,move.c);if(more.length){selected={r:move.r,c:move.c};highlights=more;mustContinue=true;render();return;}}
+  if(move.isCapture){const more=furtherCaps(move.r,move.c);
+    if(more.length){selected={r:move.r,c:move.c};highlights=more;mustContinue=true;render();return;}
+  }
   mustContinue=false;selected=null;highlights=[];turn=(turn==="blue"?"yellow":"blue");
   render();
   if(turn==="blue")setTimeout(aiMove,400);
@@ -162,15 +223,8 @@ function playerMoves(player){
 function aiMove(){
   const movesets=playerMoves("blue");
   if(!movesets.length){humanScore++;updateScore();statusEl.textContent="🎉 You win!";return;}
-
-  // Capture moves
   let captureMoves=[];
-  for(const s of movesets){
-    for(const m of s.m){
-      if(m.isCapture) captureMoves.push({fr:s.r,fc:s.c,m});
-    }
-  }
-
+  for(const s of movesets){for(const m of s.m){if(m.isCapture)captureMoves.push({fr:s.r,fc:s.c,m});}}
   let choice;
   if(captureMoves.length){
     let maxKill=Math.max(...captureMoves.map(m=>m.m.captures.length));
@@ -180,14 +234,11 @@ function aiMove(){
     const all=movesets.flatMap(s=>s.m.map(m=>({fr:s.r,fc:s.c,m})));
     choice=all[Math.floor(Math.random()*all.length)];
   }
-
   doMove(choice.fr,choice.fc,choice.m);
   if(!playerMoves("yellow").length){aiScore++;updateScore();statusEl.textContent="💻 Computer wins!";}
 }
 
-function updateScore(){
-  scoreEl.textContent=`You: ${humanScore} | Computer: ${aiScore}`;
-}
+function updateScore(){scoreEl.textContent=`You: ${humanScore} | Computer: ${aiScore}`;}
 function restartGame(){init();}
 init();
 </script>
