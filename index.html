@@ -6,42 +6,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { 
-      display:flex; 
-      justify-content:center; 
-      align-items:center; 
-      height:100vh; 
-      background:linear-gradient(135deg, #1e272e, #2f3640); 
-      font-family:sans-serif;
+      display:flex; justify-content:center; align-items:center; 
+      height:100vh; background:linear-gradient(135deg,#1e272e,#2f3640); 
+      font-family:sans-serif; color:#fff;
+    }
+    .container { text-align:center; }
+    #scoreboard {
+      display:flex; justify-content:space-between;
+      width:80vw; max-width:480px; margin:0 auto 15px auto;
+      padding:10px 20px; background:rgba(0,0,0,0.4);
+      border-radius:12px; font-size:18px; font-weight:bold;
+      box-shadow:0 3px 8px rgba(0,0,0,0.5);
     }
     #board { 
-      display:grid; 
-      grid-template-columns:repeat(8, minmax(40px, 12vw)); 
-      grid-template-rows:repeat(8, minmax(40px, 12vw)); 
+      display:grid; grid-template-columns:repeat(8, minmax(40px,12vw)); 
+      grid-template-rows:repeat(8, minmax(40px,12vw)); 
       box-shadow:0 4px 20px rgba(0,0,0,0.5);
-      border-radius:12px;
-      overflow:hidden;
+      border-radius:12px; overflow:hidden; margin:0 auto;
     }
-    .cell { 
-      display:flex; 
-      justify-content:center; 
-      align-items:center; 
-      touch-action: manipulation;
-    }
+    .cell { display:flex; justify-content:center; align-items:center; touch-action:manipulation; }
     .dark { background:#3e3e3e; }
     .light { background:#d2b48c; }
     .piece { 
-      width:80%; 
-      height:80%; 
-      border-radius:50%; 
-      display:flex; 
-      justify-content:center; 
-      align-items:center; 
-      font-size:4vw; 
-      font-weight:bold; 
-      color:#fff; 
-      cursor:pointer; 
-      box-shadow:0 3px 6px rgba(0,0,0,0.4);
-      transition: transform 0.15s;
+      width:80%; height:80%; border-radius:50%; display:flex; 
+      justify-content:center; align-items:center; font-size:4vw; font-weight:bold; 
+      color:#fff; cursor:pointer; box-shadow:0 3px 6px rgba(0,0,0,0.4);
+      transition:transform 0.15s;
     }
     .piece:active { transform:scale(0.9); }
     .blue { background:#3498db; }
@@ -49,30 +39,39 @@
     .king { border:3px solid gold; font-size:3vw; }
     .king::after { content:"👑"; font-size:3vw; margin-left:2px; }
     .highlight { outline:4px solid yellow; border-radius:12px; }
-    #restart { 
-      margin-top:20px; 
-      padding:12px 24px; 
-      border:none; 
-      border-radius:12px; 
-      background:linear-gradient(135deg, #27ae60, #2ecc71); 
-      color:#fff; 
-      font-size:20px; 
-      font-weight:bold; 
-      cursor:pointer; 
+    #restart {
+      margin-top:15px; padding:12px 24px; border:none; border-radius:12px;
+      background:linear-gradient(135deg,#27ae60,#2ecc71);
+      color:#fff; font-size:20px; font-weight:bold; cursor:pointer;
       box-shadow:0 4px 12px rgba(0,0,0,0.4);
     }
     #restart:active { transform:scale(0.95); }
-    .container { text-align:center; }
   </style>
 </head>
 <body>
   <div class="container">
+    <div id="scoreboard">
+      <div>🟦 Blue: <span id="blueCount">12</span></div>
+      <div>🔴 Red: <span id="redCount">12</span></div>
+    </div>
     <div id="board"></div>
     <button id="restart">🔄 Restart</button>
   </div>
 
+  <!-- 🎵 Audio Effects -->
+  <audio id="moveSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+  <audio id="captureSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+  <audio id="winSound" src="https://actions.google.com/sounds/v1/cartoon/concussive_drum_hit.ogg"></audio>
+
   <script>
     const boardEl=document.getElementById("board");
+    const blueCountEl=document.getElementById("blueCount");
+    const redCountEl=document.getElementById("redCount");
+
+    const moveSound=document.getElementById("moveSound");
+    const captureSound=document.getElementById("captureSound");
+    const winSound=document.getElementById("winSound");
+
     const size=8;
     let board=[], selected=null, moves=[], turn="blue";
 
@@ -89,6 +88,7 @@
       }
       turn="blue";
       selected=null;
+      updateScore();
       render();
     }
 
@@ -130,7 +130,6 @@
       let moves=[];
 
       if(p.king){
-        // King moves (any diagonal distance, all directions)
         const dirs=[[1,1],[1,-1],[-1,1],[-1,-1]];
         for(const[dr,dc] of dirs){
           let nr=r+dr,nc=c+dc;
@@ -143,18 +142,13 @@
           }
         }
       }else{
-        // Pawn moves (forward only)
         const forwardDirs = p.color==="blue" ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
-
-        // Normal forward step
         for(const [dr,dc] of forwardDirs){
           const nr=r+dr,nc=c+dc;
           if(inside(nr,nc) && !board[nr][nc]){
             moves.push({r:nr,c:nc,captures:[],isCapture:false});
           }
         }
-
-        // Forward captures only
         for(const [dr,dc] of forwardDirs){
           const mr=r+dr,mc=c+dc,lr=r+2*dr,lc=c+2*dc;
           if(inside(lr,lc) && board[mr]?.[mc] && board[mr][mc].color!==p.color && !board[lr][lc]){
@@ -163,7 +157,6 @@
         }
       }
 
-      // Must capture if possible
       if(moves.some(m=>m.isCapture)){
         const maxCap=Math.max(...moves.map(m=>m.captures.length));
         return moves.filter(m=>m.isCapture && m.captures.length===maxCap);
@@ -173,18 +166,23 @@
 
     function makeMove(r,c,move){
       const p=board[r][c]; board[r][c]=null; board[move.r][move.c]=p;
-      for(const cap of move.captures) board[cap.r][cap.c]=null;
 
-      // Promote
+      if(move.captures.length>0){
+        move.captures.forEach(cap=>board[cap.r][cap.c]=null);
+        captureSound.play();
+      } else {
+        moveSound.play();
+      }
+
       if(!p.king && (move.r===0 || move.r===size-1)) p.king=true;
 
-      // Multi-capture
       if(move.isCapture){
         const cont=legalMoves(move.r,move.c).filter(m=>m.isCapture);
-        if(cont.length){selected={r:move.r,c:move.c}; moves=cont; render(); return;}
+        if(cont.length){selected={r:move.r,c:move.c}; moves=cont; render(); updateScore(); return;}
       }
 
       turn = (turn==="blue")?"red":"blue";
+      updateScore();
       render();
       if(turn==="red") setTimeout(aiMove,600);
     }
@@ -199,9 +197,25 @@
           }
         }
       }
-      if(!all.length){alert("🎉 Blue Wins!");return;}
+      if(!all.length){winSound.play(); alert("🎉 Blue Wins!");return;}
       const move=all[Math.floor(Math.random()*all.length)];
       makeMove(move.r,move.c,move);
+    }
+
+    function updateScore(){
+      let blue=0, red=0;
+      for(let r=0;r<size;r++){
+        for(let c=0;c<size;c++){
+          if(board[r][c]){
+            if(board[r][c].color==="blue") blue++;
+            else red++;
+          }
+        }
+      }
+      blueCountEl.textContent=blue;
+      redCountEl.textContent=red;
+      if(blue===0){winSound.play(); alert("🔴 Red Wins!");}
+      if(red===0){winSound.play(); alert("🟦 Blue Wins!");}
     }
 
     document.getElementById("restart").onclick=init;
