@@ -3,223 +3,168 @@
 <head>
   <meta charset="UTF-8">
   <title>Myanmar Checkers</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { 
-      display:flex; justify-content:center; align-items:center; 
-      height:100vh; background:linear-gradient(135deg,#1e272e,#2f3640); 
-      font-family:sans-serif; color:#fff;
-    }
-    .container { text-align:center; }
-    #scoreboard {
-      display:flex; justify-content:space-between;
-      width:80vw; max-width:480px; margin:0 auto 15px auto;
-      padding:10px 20px; background:rgba(0,0,0,0.4);
-      border-radius:12px; font-size:18px; font-weight:bold;
-      box-shadow:0 3px 8px rgba(0,0,0,0.5);
-    }
-    #board { 
-      display:grid; grid-template-columns:repeat(8, minmax(40px,12vw)); 
-      grid-template-rows:repeat(8, minmax(40px,12vw)); 
-      box-shadow:0 4px 20px rgba(0,0,0,0.5);
-      border-radius:12px; overflow:hidden; margin:0 auto;
-    }
-    .cell { display:flex; justify-content:center; align-items:center; touch-action:manipulation; }
-    .dark { background:#3e3e3e; }
-    .light { background:#d2b48c; }
-    .piece { 
-      width:80%; height:80%; border-radius:50%; display:flex; 
-      justify-content:center; align-items:center; font-size:4vw; font-weight:bold; 
-      color:#fff; cursor:pointer; box-shadow:0 3px 6px rgba(0,0,0,0.4);
-      transition:transform 0.15s;
-    }
-    .piece:active { transform:scale(0.9); }
-    .blue { background:#3498db; }
-    .red { background:#e74c3c; }
-    .king { border:3px solid gold; font-size:3vw; }
-    .king::after { content:"👑"; font-size:3vw; margin-left:2px; }
-    .highlight { outline:4px solid yellow; border-radius:12px; }
-    #restart {
-      margin-top:15px; padding:12px 24px; border:none; border-radius:12px;
-      background:linear-gradient(135deg,#27ae60,#2ecc71);
-      color:#fff; font-size:20px; font-weight:bold; cursor:pointer;
-      box-shadow:0 4px 12px rgba(0,0,0,0.4);
-    }
-    #restart:active { transform:scale(0.95); }
+    body { display:flex; justify-content:center; align-items:center; height:100vh; background:#111; margin:0; }
+    #board { display:grid; grid-template-columns:repeat(8,60px); grid-template-rows:repeat(8,60px); }
+    .cell { width:60px; height:60px; display:flex; justify-content:center; align-items:center; }
+    .dark { background:#333; }
+    .light { background:#ddd; }
+    .piece { width:45px; height:45px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:22px; cursor:pointer; }
+    .blue { background:#3af; color:white; }
+    .red { background:#f44; color:white; }
+    .king { border:3px solid gold; }
+    .highlight { outline:3px solid yellow; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div id="scoreboard">
-      <div>🟦 Blue: <span id="blueCount">12</span></div>
-      <div>🔴 Red: <span id="redCount">12</span></div>
-    </div>
-    <div id="board"></div>
-    <button id="restart">🔄 Restart</button>
-  </div>
+  <div id="board"></div>
 
-  <!-- 🎵 Audio Effects -->
-  <audio id="moveSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
-  <audio id="captureSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
-  <audio id="winSound" src="https://actions.google.com/sounds/v1/cartoon/concussive_drum_hit.ogg"></audio>
+<script>
+const size=8;
+let board=[], turn="blue", selected=null, moves=[];
 
-  <script>
-    const boardEl=document.getElementById("board");
-    const blueCountEl=document.getElementById("blueCount");
-    const redCountEl=document.getElementById("redCount");
+function init(){
+  board=[];
+  for(let r=0;r<size;r++){
+    board[r]=[];
+    for(let c=0;c<size;c++){
+      if((r+c)%2===1 && r<3) board[r][c]={color:"red",king:false};
+      else if((r+c)%2===1 && r>4) board[r][c]={color:"blue",king:false};
+      else board[r][c]=null;
+    }
+  }
+  render();
+}
 
-    const moveSound=document.getElementById("moveSound");
-    const captureSound=document.getElementById("captureSound");
-    const winSound=document.getElementById("winSound");
-
-    const size=8;
-    let board=[], selected=null, moves=[], turn="blue";
-
-    function init(){
-      board=[];
-      for(let r=0;r<size;r++){
-        let row=[];
-        for(let c=0;c<size;c++){
-          if(r<3 && (r+c)%2===1) row.push({color:"red", king:false});
-          else if(r>4 && (r+c)%2===1) row.push({color:"blue", king:false});
-          else row.push(null);
-        }
-        board.push(row);
+function render(){
+  const b=document.getElementById("board"); b.innerHTML="";
+  for(let r=0;r<size;r++){
+    for(let c=0;c<size;c++){
+      const cell=document.createElement("div");
+      cell.className="cell "+((r+c)%2?"dark":"light");
+      cell.onclick=()=>handleClick(r,c);
+      if(board[r][c]){
+        const p=board[r][c];
+        const piece=document.createElement("div");
+        piece.className="piece "+p.color+(p.king?" king":"");
+        piece.textContent=p.king?"K":"";
+        if(selected && selected.r===r && selected.c===c) piece.classList.add("highlight");
+        cell.appendChild(piece);
       }
-      turn="blue";
-      selected=null;
-      updateScore();
+      if(moves.some(m=>m.r===r && m.c===c)){
+        cell.style.outline="3px solid lime";
+      }
+      b.appendChild(cell);
+    }
+  }
+}
+
+function handleClick(r,c){
+  if(turn!=="blue") return;
+  const p=board[r][c];
+  if(p && p.color===turn){
+    selected={r,c};
+    moves=legalMoves(r,c);
+    render();
+  } else if(selected){
+    const move=moves.find(m=>m.r===r && m.c===c);
+    if(move) makeMove(selected.r,selected.c,move);
+  }
+}
+
+function inside(r,c){ return r>=0 && r<size && c>=0 && c<size; }
+
+function legalMoves(r,c){
+  const p=board[r][c]; if(!p) return [];
+  let moves=[];
+  if(p.king){
+    // Kings move in all 4 diagonal directions
+    for(const [dr,dc] of [[1,1],[1,-1],[-1,1],[-1,-1]]){
+      let nr=r+dr, nc=c+dc;
+      while(inside(nr,nc) && !board[nr][nc]){
+        moves.push({r:nr,c:nc,captures:[],isCapture:false});
+        nr+=dr; nc+=dc;
+      }
+      if(inside(nr,nc) && board[nr][nc]?.color!==p.color){
+        let lr=nr+dr, lc=nc+dc;
+        if(inside(lr,lc) && !board[lr][lc]){
+          moves.push({r:lr,c:lc,captures:[{r:nr,c:nc}],isCapture:true});
+        }
+      }
+    }
+  } else {
+    // Normal pawns - Myanmar rules (forward only)
+    const forwardDirs = p.color==="blue" ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
+    for(const [dr,dc] of forwardDirs){
+      const nr=r+dr, nc=c+dc;
+      if(inside(nr,nc) && !board[nr][nc]){
+        moves.push({r:nr,c:nc,captures:[],isCapture:false});
+      }
+    }
+    for(const [dr,dc] of forwardDirs){
+      const mr=r+dr, mc=c+dc, lr=r+2*dr, lc=c+2*dc;
+      if(
+        inside(lr,lc) &&
+        board[mr]?.[mc] &&
+        board[mr][mc].color!==p.color &&
+        !board[lr][lc]
+      ){
+        moves.push({r:lr,c:lc,captures:[{r:mr,c:mc}],isCapture:true});
+      }
+    }
+  }
+  return moves;
+}
+
+function makeMove(r,c,move){
+  const p=board[r][c]; 
+  board[r][c]=null; 
+  board[move.r][move.c]=p;
+
+  // Remove captured pieces
+  if(move.captures && move.captures.length>0){
+    move.captures.forEach(cap=>board[cap.r][cap.c]=null);
+  }
+
+  // Promote to king
+  if(!p.king && (move.r===0 || move.r===size-1)) p.king=true;
+
+  // Only allow continuation if capture happened AND more captures exist
+  if(move.captures && move.captures.length>0){
+    const cont = legalMoves(move.r, move.c).filter(m => m.captures && m.captures.length>0);
+    if(cont.length > 0){
+      selected={r:move.r,c:move.c};
+      moves=cont;
       render();
+      return;
     }
+  }
 
-    function render(){
-      boardEl.innerHTML="";
-      for(let r=0;r<size;r++){
-        for(let c=0;c<size;c++){
-          const cell=document.createElement("div");
-          cell.className="cell "+(((r+c)%2)?"dark":"light");
-          if(selected && moves.some(m=>m.r===r && m.c===c)) cell.classList.add("highlight");
-          cell.onclick=()=>select(r,c);
-          const p=board[r][c];
-          if(p){
-            const piece=document.createElement("div");
-            piece.className="piece "+p.color+(p.king?" king":"");
-            cell.appendChild(piece);
-          }
-          boardEl.appendChild(cell);
-        }
-      }
-    }
+  // Otherwise end turn
+  selected=null;
+  moves=[];
+  turn = (turn==="blue") ? "red" : "blue";
+  render();
 
-    function inside(r,c){return r>=0&&r<size&&c>=0&&c<size;}
+  if(turn==="red") setTimeout(aiMove,600);
+}
 
-    function select(r,c){
-      if(turn!=="blue")return;
-      if(board[r][c] && board[r][c].color==="blue"){
-        selected={r,c};
-        moves=legalMoves(r,c);
-        render();
-      }else if(selected){
-        const move=moves.find(m=>m.r===r && m.c===c);
-        if(move)makeMove(selected.r,selected.c,move);
+function aiMove(){
+  let aiMoves=[];
+  for(let r=0;r<size;r++){
+    for(let c=0;c<size;c++){
+      const p=board[r][c];
+      if(p && p.color==="red"){
+        for(const m of legalMoves(r,c)) aiMoves.push({r,c,move:m});
       }
     }
+  }
+  if(aiMoves.length===0) return;
+  const choice=aiMoves[Math.floor(Math.random()*aiMoves.length)];
+  makeMove(choice.r,choice.c,choice.move);
+}
 
-    function legalMoves(r,c){
-      const p=board[r][c]; if(!p) return [];
-      let moves=[];
-
-      if(p.king){
-        const dirs=[[1,1],[1,-1],[-1,1],[-1,-1]];
-        for(const[dr,dc] of dirs){
-          let nr=r+dr,nc=c+dc;
-          while(inside(nr,nc) && !board[nr][nc]){
-            moves.push({r:nr,c:nc,captures:[],isCapture:false});
-            nr+=dr; nc+=dc;
-          }
-          if(inside(nr+dr,nc+dc) && board[nr]?.[nc] && board[nr][nc].color!==p.color && !board[nr+dr][nc+dc]){
-            moves.push({r:nr+dr,c:nc+dc,captures:[{r:nr,c:nc}],isCapture:true});
-          }
-        }
-      }else{
-        const forwardDirs = p.color==="blue" ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
-        for(const [dr,dc] of forwardDirs){
-          const nr=r+dr,nc=c+dc;
-          if(inside(nr,nc) && !board[nr][nc]){
-            moves.push({r:nr,c:nc,captures:[],isCapture:false});
-          }
-        }
-        for(const [dr,dc] of forwardDirs){
-          const mr=r+dr,mc=c+dc,lr=r+2*dr,lc=c+2*dc;
-          if(inside(lr,lc) && board[mr]?.[mc] && board[mr][mc].color!==p.color && !board[lr][lc]){
-            moves.push({r:lr,c:lc,captures:[{r:mr,c:mc}],isCapture:true});
-          }
-        }
-      }
-
-      if(moves.some(m=>m.isCapture)){
-        const maxCap=Math.max(...moves.map(m=>m.captures.length));
-        return moves.filter(m=>m.isCapture && m.captures.length===maxCap);
-      }
-      return moves;
-    }
-
-    function makeMove(r,c,move){
-      const p=board[r][c]; board[r][c]=null; board[move.r][move.c]=p;
-
-      if(move.captures.length>0){
-        move.captures.forEach(cap=>board[cap.r][cap.c]=null);
-        captureSound.play();
-      } else {
-        moveSound.play();
-      }
-
-      if(!p.king && (move.r===0 || move.r===size-1)) p.king=true;
-
-      if(move.isCapture){
-        const cont=legalMoves(move.r,move.c).filter(m=>m.isCapture);
-        if(cont.length){selected={r:move.r,c:move.c}; moves=cont; render(); updateScore(); return;}
-      }
-
-      turn = (turn==="blue")?"red":"blue";
-      updateScore();
-      render();
-      if(turn==="red") setTimeout(aiMove,600);
-    }
-
-    function aiMove(){
-      let all=[];
-      for(let r=0;r<size;r++){
-        for(let c=0;c<size;c++){
-          if(board[r][c]?.color==="red"){
-            const mv=legalMoves(r,c);
-            mv.forEach(m=>all.push({r,c,...m}));
-          }
-        }
-      }
-      if(!all.length){winSound.play(); alert("🎉 Blue Wins!");return;}
-      const move=all[Math.floor(Math.random()*all.length)];
-      makeMove(move.r,move.c,move);
-    }
-
-    function updateScore(){
-      let blue=0, red=0;
-      for(let r=0;r<size;r++){
-        for(let c=0;c<size;c++){
-          if(board[r][c]){
-            if(board[r][c].color==="blue") blue++;
-            else red++;
-          }
-        }
-      }
-      blueCountEl.textContent=blue;
-      redCountEl.textContent=red;
-      if(blue===0){winSound.play(); alert("🔴 Red Wins!");}
-      if(red===0){winSound.play(); alert("🟦 Blue Wins!");}
-    }
-
-    document.getElementById("restart").onclick=init;
-    init();
-  </script>
+init();
+</script>
 </body>
 </html>
