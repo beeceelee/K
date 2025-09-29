@@ -2,26 +2,105 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Myanmar Checkers</title>
+  <title>Myanmar Checkers Mobile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { display:flex; justify-content:center; align-items:center; height:100vh; background:#111; margin:0; }
-    #board { display:grid; grid-template-columns:repeat(8,60px); grid-template-rows:repeat(8,60px); }
-    .cell { width:60px; height:60px; display:flex; justify-content:center; align-items:center; }
-    .dark { background:#333; }
-    .light { background:#ddd; }
-    .piece { width:45px; height:45px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:22px; cursor:pointer; }
-    .blue { background:#3af; color:white; }
-    .red { background:#f44; color:white; }
-    .king { border:3px solid gold; }
-    .highlight { outline:3px solid yellow; }
+    body {
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+      margin:0;
+      background:#1a1a1a;
+      font-family:Arial, sans-serif;
+      color:white;
+    }
+    #controls {
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:10px;
+      margin-bottom:12px;
+    }
+    select, button {
+      padding:10px 16px;
+      font-size:16px;
+      border-radius:12px;
+      border:none;
+      outline:none;
+      box-shadow:0 3px 6px rgba(0,0,0,0.4);
+    }
+    button {
+      background:#3af;
+      color:white;
+      cursor:pointer;
+      transition:0.2s;
+    }
+    button:active {
+      transform:scale(0.95);
+      background:#28c;
+    }
+    select {
+      background:#444;
+      color:white;
+    }
+    #board {
+      display:grid;
+      grid-template-columns:repeat(8,1fr);
+      grid-template-rows:repeat(8,1fr);
+      width:95vmin;
+      height:95vmin;
+      border:8px solid #654321;
+      border-radius:12px;
+      box-shadow:0 0 15px rgba(0,0,0,0.7);
+      background:#442;
+    }
+    .cell {
+      display:flex;
+      justify-content:center;
+      align-items:center;
+    }
+    .dark { background:#5a3d2e; }
+    .light { background:#e0c097; }
+    .piece {
+      width:80%;
+      height:80%;
+      border-radius:50%;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      font-size:5vmin;
+      font-weight:bold;
+      cursor:pointer;
+      box-shadow:0 3px 6px rgba(0,0,0,0.5);
+      transition:0.2s;
+    }
+    .piece:active { transform:scale(0.9); }
+    .blue { background:linear-gradient(#4ad, #138); color:white; }
+    .red { background:linear-gradient(#f66, #900); color:white; }
+    .king { border:3px solid gold; box-shadow:0 0 12px gold; }
+    .highlight { outline:4px solid yellow; }
   </style>
 </head>
 <body>
+  <div id="controls">
+    <select id="level">
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+    <button onclick="init()">Restart</button>
+  </div>
   <div id="board"></div>
 
 <script>
 const size=8;
-let board=[], turn="blue", selected=null, moves=[];
+let board=[], turn="blue", selected=null, moves=[], difficulty="easy";
+
+document.getElementById("level").addEventListener("change", e=>{
+  difficulty = e.target.value;
+});
 
 function init(){
   board=[];
@@ -33,6 +112,9 @@ function init(){
       else board[r][c]=null;
     }
   }
+  turn="blue";
+  selected=null;
+  moves=[];
   render();
 }
 
@@ -78,7 +160,6 @@ function legalMoves(r,c){
   const p=board[r][c]; if(!p) return [];
   let moves=[];
   if(p.king){
-    // Kings move in all 4 diagonal directions
     for(const [dr,dc] of [[1,1],[1,-1],[-1,1],[-1,-1]]){
       let nr=r+dr, nc=c+dc;
       while(inside(nr,nc) && !board[nr][nc]){
@@ -93,7 +174,6 @@ function legalMoves(r,c){
       }
     }
   } else {
-    // Normal pawns - Myanmar rules (forward only)
     const forwardDirs = p.color==="blue" ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
     for(const [dr,dc] of forwardDirs){
       const nr=r+dr, nc=c+dc;
@@ -121,15 +201,12 @@ function makeMove(r,c,move){
   board[r][c]=null; 
   board[move.r][move.c]=p;
 
-  // Remove captured pieces
   if(move.captures && move.captures.length>0){
     move.captures.forEach(cap=>board[cap.r][cap.c]=null);
   }
 
-  // Promote to king
   if(!p.king && (move.r===0 || move.r===size-1)) p.king=true;
 
-  // Only allow continuation if capture happened AND more captures exist
   if(move.captures && move.captures.length>0){
     const cont = legalMoves(move.r, move.c).filter(m => m.captures && m.captures.length>0);
     if(cont.length > 0){
@@ -140,7 +217,6 @@ function makeMove(r,c,move){
     }
   }
 
-  // Otherwise end turn
   selected=null;
   moves=[];
   turn = (turn==="blue") ? "red" : "blue";
@@ -160,7 +236,16 @@ function aiMove(){
     }
   }
   if(aiMoves.length===0) return;
-  const choice=aiMoves[Math.floor(Math.random()*aiMoves.length)];
+  let choice;
+  if(difficulty==="easy"){
+    choice=aiMoves[Math.floor(Math.random()*aiMoves.length)];
+  } else if(difficulty==="medium"){
+    const captures=aiMoves.filter(m=>m.move.captures.length>0);
+    if(captures.length>0) choice=captures[Math.floor(Math.random()*captures.length)];
+    else choice=aiMoves[Math.floor(Math.random()*aiMoves.length)];
+  } else {
+    choice=aiMoves[Math.floor(Math.random()*aiMoves.length)]; // placeholder for minimax
+  }
   makeMove(choice.r,choice.c,choice.move);
 }
 
