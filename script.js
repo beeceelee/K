@@ -3,28 +3,32 @@ let board = [];
 let currentPlayer = 'red'; // red starts
 let selectedPiece = null;
 let highlightedSquares = [];
-let difficulty = "medium";
+let difficulty = "medium"; // easy | medium | hard
 
-// Init board
+// Initialize the board
 function initBoard() {
   board = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
 
-  // Place red (top)
+  // Place red (top side)
   for (let r = 0; r < 3; r++) {
     for (let c = 0; c < boardSize; c++) {
-      if ((r + c) % 2 === 1) board[r][c] = { color: "red", king: false };
+      if ((r + c) % 2 === 1) {
+        board[r][c] = { color: "red", king: false };
+      }
     }
   }
 
-  // Place black (bottom)
+  // Place black (bottom side)
   for (let r = 5; r < 8; r++) {
     for (let c = 0; c < boardSize; c++) {
-      if ((r + c) % 2 === 1) board[r][c] = { color: "black", king: false };
+      if ((r + c) % 2 === 1) {
+        board[r][c] = { color: "black", king: false };
+      }
     }
   }
 }
 
-// Render board
+// Render the board
 function renderBoard() {
   const gameDiv = document.getElementById("game");
   gameDiv.innerHTML = "";
@@ -54,15 +58,17 @@ function renderBoard() {
   }
 }
 
-// Get moves for a piece
+// Get valid moves for a piece
 function getMoves(r, c) {
   const piece = board[r][c];
-  if (!piece) return [];
+  if (!piece) return { captures: [], normalMoves: [] };
 
   const directions = [];
   if (piece.king) {
+    // King can move all diagonals
     directions.push([-1, -1], [-1, 1], [1, -1], [1, 1]);
   } else {
+    // Pawn: only forward
     const dir = piece.color === "red" ? 1 : -1;
     directions.push([dir, -1], [dir, 1]);
   }
@@ -82,7 +88,7 @@ function getMoves(r, c) {
       }
     }
 
-    // Normal move (only if no capture exists anywhere)
+    // Normal move (only allowed if no captures available anywhere)
     if (isInside(nr, nc) && !board[nr][nc]) {
       normalMoves.push([nr, nc]);
     }
@@ -91,7 +97,7 @@ function getMoves(r, c) {
   return { captures, normalMoves };
 }
 
-// Check if inside board
+// Check board bounds
 function isInside(r, c) {
   return r >= 0 && r < boardSize && c >= 0 && c < boardSize;
 }
@@ -105,7 +111,7 @@ function handleClick(r, c) {
     const moves = getMoves(r, c);
     highlightedSquares = [];
 
-    // Only highlight captures if available
+    // Highlight only captures if available
     if (anyCapturesAvailable()) {
       highlightedSquares = moves.captures.map(m => [m[0], m[1]]);
     } else {
@@ -118,7 +124,7 @@ function handleClick(r, c) {
   renderBoard();
 }
 
-// Move / capture
+// Try moving or capturing
 function tryMove(r, c, nr, nc) {
   const moves = getMoves(r, c);
   const piece = board[r][c];
@@ -132,12 +138,12 @@ function tryMove(r, c, nr, nc) {
     board[r][c] = null;
     board[captureMove[2]][captureMove[3]] = null;
 
-    // Crown if reaching last row
+    // Promote to king if reaching last row
     if (!piece.king && ((piece.color === "red" && nr === boardSize - 1) || (piece.color === "black" && nr === 0))) {
       piece.king = true;
     }
 
-    // Continue capture if available
+    // Continue capturing if possible
     selectedPiece = [nr, nc];
     const nextMoves = getMoves(nr, nc);
     if (nextMoves.captures.length > 0) {
@@ -164,7 +170,7 @@ function tryMove(r, c, nr, nc) {
   renderBoard();
 }
 
-// Check if any capture available
+// Check if any captures exist
 function anyCapturesAvailable() {
   for (let r = 0; r < boardSize; r++) {
     for (let c = 0; c < boardSize; c++) {
@@ -177,7 +183,7 @@ function anyCapturesAvailable() {
   return false;
 }
 
-// Restart
+// Restart button
 document.getElementById("restart").addEventListener("click", () => {
   initBoard();
   currentPlayer = "red";
@@ -186,11 +192,12 @@ document.getElementById("restart").addEventListener("click", () => {
   renderBoard();
 });
 
-// AI mode change
+// Difficulty selector (AI not yet implemented)
 document.getElementById("difficulty").addEventListener("change", (e) => {
   difficulty = e.target.value;
+  console.log("Difficulty set to:", difficulty);
 });
 
-// Start
+// Start the game
 initBoard();
 renderBoard();
