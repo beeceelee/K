@@ -1,110 +1,196 @@
-const game = document.getElementById("game");
+const boardSize = 8;
 let board = [];
-let selected = null;
-let currentPlayer = "red"; // red starts
+let currentPlayer = 'red'; // red starts
+let selectedPiece = null;
+let highlightedSquares = [];
+let difficulty = "medium";
 
-// Build 8x8 board
-function createBoard() {
-  game.innerHTML = "";
-  board = [];
+// Init board
+function initBoard() {
+  board = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
 
-  for (let row = 0; row < 8; row++) {
-    let rowArray = [];
-    for (let col = 0; col < 8; col++) {
-      const square = document.createElement("div");
-      square.classList.add("square", (row + col) % 2 === 0 ? "light" : "dark");
-      square.dataset.row = row;
-      square.dataset.col = col;
-      game.appendChild(square);
-
-      // Place pieces
-      let piece = null;
-      if (row < 3 && (row + col) % 2 !== 0) {
-        piece = { color: "black", king: false };
-      } else if (row > 4 && (row + col) % 2 !== 0) {
-        piece = { color: "red", king: false };
-      }
-
-      rowArray.push(piece);
-      if (piece) renderPiece(square, piece);
-
-      // Add click
-      square.addEventListener("click", () => handleClick(row, col));
+  // Place red (top)
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < boardSize; c++) {
+      if ((r + c) % 2 === 1) board[r][c] = { color: "red", king: false };
     }
-    board.push(rowArray);
+  }
+
+  // Place black (bottom)
+  for (let r = 5; r < 8; r++) {
+    for (let c = 0; c < boardSize; c++) {
+      if ((r + c) % 2 === 1) board[r][c] = { color: "black", king: false };
+    }
   }
 }
 
-function renderPiece(square, piece) {
-  const div = document.createElement("div");
-  div.classList.add("piece", piece.color);
-  if (piece.king) div.classList.add("king");
-  square.appendChild(div);
+// Render board
+function renderBoard() {
+  const gameDiv = document.getElementById("game");
+  gameDiv.innerHTML = "";
+
+  for (let r = 0; r < boardSize; r++) {
+    for (let c = 0; c < boardSize; c++) {
+      const square = document.createElement("div");
+      square.className = "square " + ((r + c) % 2 === 0 ? "light" : "dark");
+      square.dataset.row = r;
+      square.dataset.col = c;
+
+      const piece = board[r][c];
+      if (piece) {
+        const pieceDiv = document.createElement("div");
+        pieceDiv.className = `piece ${piece.color}`;
+        if (piece.king) pieceDiv.classList.add("king");
+        square.appendChild(pieceDiv);
+      }
+
+      if (highlightedSquares.some(h => h[0] === r && h[1] === c)) {
+        square.classList.add("highlight");
+      }
+
+      square.addEventListener("click", () => handleClick(r, c));
+      gameDiv.appendChild(square);
+    }
+  }
+}
+
+// Get moves for a piece
+function getMoves(r, c) {
+  const piece = board[r][c];
+  if (!piece) return [];
+
+  const directions = [];
+  if (piece.king) {
+    directions.push([-1, -1], [-1, 1], [1, -1], [1, 1]);
+  } else {
+    const dir = piece.color === "red" ? 1 : -1;
+    directions.push([dir, -1], [dir, 1]);
+  }
+
+  let captures = [];
+  let normalMoves = [];
+
+  for (let [dr, dc] of directions) {
+    const nr = r + dr, nc = c + dc;
+    const jumpR = r + dr * 2, jumpC = c + dc * 2;
+
+    // Capture
+    if (isInside(nr, nc) && isInside(jumpR, jumpC)) {
+      const target = board[nr][nc];
+      if (target && target.color !== piece.color && !board[jumpR][jumpC]) {
+        captures.push([jumpR, jumpC, nr, nc]); // (end row, end col, captured row, captured col)
+      }
+    }
+
+    // Normal move (only if no capture exists anywhere)
+    if (isInside(nr, nc) && !board[nr][nc]) {
+      normalMoves.push([nr, nc]);
+    }
+  }
+
+  return { captures, normalMoves };
+}
+
+// Check if inside board
+function isInside(r, c) {
+  return r >= 0 && r < boardSize && c >= 0 && c < boardSize;
 }
 
 // Handle click
-function handleClick(row, col) {
-  const piece = board[row][col];
+function handleClick(r, c) {
+  const piece = board[r][c];
 
-  if (selected) {
-    const moves = getValidMoves(selected.row, selected.col);
-    const move = moves.find(m => m.row === row && m.col === col);
-    if (move) {
-      makeMove(selected.row, selected.col, row, col);
-      currentPlayer = currentPlayer === "red" ? "black" : "red";
+  if (piece && piece.color === currentPlayer) {
+    selectedPiece = [r, c];
+    const moves = getMoves(r, c);
+    highlightedSquares = [];
+
+    // Only highlight captures if available
+    if (anyCapturesAvailable()) {
+      highlightedSquares = moves.captures.map(m => [m[0], m[1]]);
+    } else {
+      highlightedSquares = moves.normalMoves;
     }
-    clearHighlights();
-    selected = null;
-  } else if (piece && piece.color === currentPlayer) {
-    selected = { row, col };
-    const moves = getValidMoves(row, col);
-    highlightMoves(moves);
+  } else if (selectedPiece) {
+    tryMove(selectedPiece[0], selectedPiece[1], r, c);
   }
+
+  renderBoard();
 }
 
-function getValidMoves(row, col) {
-  const piece = board[row][col];
-  if (!piece) return [];
+// Move / capture
+function tryMove(r, c, nr, nc) {
+  const moves = getMoves(r, c);
+  const piece = board[r][c];
 
-  let moves = [];
-  let dir = piece.color === "red" ? -1 : 1; // red goes up, black goes down
+  let captureMove = moves.captures.find(m => m[0] === nr && m[1] === nc);
+  let normalMove = moves.normalMoves.find(m => m[0] === nr && m[1] === nc);
 
-  [[dir, -1], [dir, 1]].forEach(([dr, dc]) => {
-    const newRow = row + dr, newCol = col + dc;
-    if (isInBounds(newRow, newCol) && !board[newRow][newCol]) {
-      moves.push({ row: newRow, col: newCol });
+  if (captureMove) {
+    // Capture
+    board[nr][nc] = piece;
+    board[r][c] = null;
+    board[captureMove[2]][captureMove[3]] = null;
+
+    // Crown if reaching last row
+    if (!piece.king && ((piece.color === "red" && nr === boardSize - 1) || (piece.color === "black" && nr === 0))) {
+      piece.king = true;
     }
-  });
 
-  return moves;
+    // Continue capture if available
+    selectedPiece = [nr, nc];
+    const nextMoves = getMoves(nr, nc);
+    if (nextMoves.captures.length > 0) {
+      highlightedSquares = nextMoves.captures.map(m => [m[0], m[1]]);
+      renderBoard();
+      return;
+    }
+  } else if (!anyCapturesAvailable() && normalMove) {
+    // Normal move
+    board[nr][nc] = piece;
+    board[r][c] = null;
+
+    if (!piece.king && ((piece.color === "red" && nr === boardSize - 1) || (piece.color === "black" && nr === 0))) {
+      piece.king = true;
+    }
+  } else {
+    return; // invalid move
+  }
+
+  // Switch turn
+  currentPlayer = currentPlayer === "red" ? "black" : "red";
+  selectedPiece = null;
+  highlightedSquares = [];
+  renderBoard();
 }
 
-function makeMove(fromRow, fromCol, toRow, toCol) {
-  const piece = board[fromRow][fromCol];
-  board[toRow][toCol] = piece;
-  board[fromRow][fromCol] = null;
-  createBoard();
+// Check if any capture available
+function anyCapturesAvailable() {
+  for (let r = 0; r < boardSize; r++) {
+    for (let c = 0; c < boardSize; c++) {
+      const piece = board[r][c];
+      if (piece && piece.color === currentPlayer) {
+        if (getMoves(r, c).captures.length > 0) return true;
+      }
+    }
+  }
+  return false;
 }
 
-function isInBounds(row, col) {
-  return row >= 0 && row < 8 && col >= 0 && col < 8;
-}
+// Restart
+document.getElementById("restart").addEventListener("click", () => {
+  initBoard();
+  currentPlayer = "red";
+  selectedPiece = null;
+  highlightedSquares = [];
+  renderBoard();
+});
 
-// Highlight
-function highlightMoves(moves) {
-  clearHighlights();
-  moves.forEach(move => {
-    const square = document.querySelector(
-      `.square[data-row='${move.row}'][data-col='${move.col}']`
-    );
-    if (square) square.classList.add("highlight");
-  });
-}
+// AI mode change
+document.getElementById("difficulty").addEventListener("change", (e) => {
+  difficulty = e.target.value;
+});
 
-function clearHighlights() {
-  document.querySelectorAll(".highlight").forEach(sq => {
-    sq.classList.remove("highlight");
-  });
-}
-
-createBoard();
+// Start
+initBoard();
+renderBoard();
