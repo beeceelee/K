@@ -1,34 +1,38 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spanish Checkers</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Spanish Checkers (Damas)</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="game-container">
-    <h1>Spanish Checkers</h1>
-    <div class="controls">
-      <label for="difficulty">Difficulty:</label>
-      <select id="difficulty">
-        <option value="easy">Easy</option>
-        <option value="medium">Medium</option>
-        <option value="hard">Hard</option>
-      </select>
-      <button id="restart">Restart</button>
+  <div class="app">
+    <header class="topbar">
+      <h1>Spanish Checkers</h1>
+      <div class="controls">
+        <select id="mode">
+          <option value="pvp">2-Player</option>
+          <option value="easy">AI Easy</option>
+          <option value="medium">AI Medium</option>
+          <option value="hard">AI Hard</option>
+        </select>
+        <button id="restartBtn">Restart</button>
+      </div>
+    </header>
+
+    <div class="hud">
+      <div id="status" class="card">Blue to move</div>
+      <div id="score" class="card">Blue:12 &nbsp; Red:12</div>
     </div>
-    <div class="scoreboard">
-      <span id="human-score">You: 12</span>
-      <span id="ai-score">AI: 12</span>
-    </div>
-    <div id="board"></div>
+
+    <div id="board" class="board" aria-label="checkers board"></div>
   </div>
 
-  <!-- Sound effects -->
-  <audio id="move-sound" src="sounds/move.mp3"></audio>
-  <audio id="capture-sound" src="sounds/capture.mp3"></audio>
-  <audio id="win-sound" src="sounds/win.mp3"></audio>
+  <!-- Sounds (put real files in sounds/ or change src) -->
+  <audio id="moveSound" src="sounds/move.mp3"></audio>
+  <audio id="captureSound" src="sounds/capture.mp3"></audio>
+  <audio id="winSound" src="sounds/win.mp3"></audio>
 
   <script src="script.js"></script>
 </body>
